@@ -24,6 +24,7 @@
 package me.cassiano.thunder;
 
 /* Classe Responsável pelo Armazenamento do Símbolo */
+
 public class Symbol {
 
     private Token token;
