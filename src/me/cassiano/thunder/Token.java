@@ -1,9 +1,9 @@
 package me.cassiano.thunder;
 
 
-public enum ReservedWord {
+public enum Token {
 
-    //ID("[A-Za-z_][A-Za-z_0-9]*"),
+    ID("[A-Za-z_][A-Za-z_0-9]*"),
     FINAL("final"),
     INT("int"),
     BYTE("byte"),
@@ -38,7 +38,10 @@ public enum ReservedWord {
     WRITE_LINE("writeln"),
     TRUE("true"),
     FALSE("false"),
-    BOOLEAN("boolean");
+    APOSTROPHE("'"),
+    BOOLEAN("boolean"),
+    EOF("eof"),
+    UNDERSCORE("_");
 
     private final String text;
 
@@ -46,7 +49,7 @@ public enum ReservedWord {
      * @param text
      * lexeme for the symbol
      */
-    ReservedWord(final String text) {
+    Token(final String text) {
         this.text = text;
     }
 

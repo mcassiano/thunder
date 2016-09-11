@@ -2,19 +2,24 @@ package me.cassiano.thunder;
 
 public class Symbol {
 
-    private String token;
+    private Token token;
     private String lexeme;
 
-    public Symbol(String token, String lexeme) {
+    public Symbol(Token token, String lexeme) {
         this.token = token;
         this.lexeme = lexeme;
+    }
+
+    public Symbol(Token token) {
+        this.token = token;
+        this.lexeme = token.toString();
     }
 
     public String getLexeme() {
         return lexeme;
     }
 
-    public String getToken() {
+    public Token getToken() {
         return token;
     }
 }

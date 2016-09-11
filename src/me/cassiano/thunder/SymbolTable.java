@@ -3,6 +3,7 @@ package me.cassiano.thunder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public class SymbolTable {
 
@@ -18,11 +19,9 @@ public class SymbolTable {
 
             /* init the symbols table with reserved words */
 
-            for (ReservedWord word : ReservedWord.values()) {
+            for (Token token : Token.values()) {
 
-                String token = word.name();
-                String lexeme = word.toString();
-
+                String lexeme = token.toString();
                 instance.symbols.put(lexeme, new Symbol(token, lexeme));
 
             }
@@ -32,8 +31,20 @@ public class SymbolTable {
         return instance;
     }
 
+    public boolean hasSymbol(String lexeme) {
+        return instance.symbols.containsKey(lexeme);
+    }
+
     public Symbol getSymbol(String lexeme) {
         return instance.symbols.get(lexeme);
+    }
+
+    public void putSymbol(Symbol sym) {
+        instance.symbols.put(sym.getLexeme(), sym);
+    }
+
+    public Set<Map.Entry<String, Symbol>> symbols() {
+        return instance.symbols.entrySet();
     }
 
     private SymbolTable() {
