@@ -1,8 +1,9 @@
 package me.cassiano.thunder;
 
 
-public enum ReservedWords {
+public enum ReservedWord {
 
+    //ID("[A-Za-z_][A-Za-z_0-9]*"),
     FINAL("final"),
     INT("int"),
     BYTE("byte"),
@@ -45,7 +46,7 @@ public enum ReservedWords {
      * @param text
      * lexeme for the symbol
      */
-    ReservedWords(final String text) {
+    ReservedWord(final String text) {
         this.text = text;
     }
 
