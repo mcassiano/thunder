@@ -2,10 +2,13 @@ package me.cassiano.thunder;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import me.cassiano.thunder.exception.UnexpectedEndOfFile;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, UnexpectedEndOfFile {
 
         String sourceFile = null;
         String outputFile;
@@ -29,15 +32,13 @@ public class Main {
 
         if (stream != null) {
 
-            Symbol sym = LexicalAnalyzer.get().analyze(stream);
+            Symbol sym;
 
-            do {
-                System.out.println(String.format("Symbol: %s", sym.getToken().name()));
-                sym = LexicalAnalyzer.get().analyze(stream);
-
+            while ((sym = LexicalAnalyzer.get().analyze(stream)).getToken() != Token.EOF) {
+                System.out.println(String.format("TOKEN: %s. LEXEME: %s",
+                        sym.getToken().name(), sym.getLexeme()));
             }
 
-            while (sym != null);
 
         }
 

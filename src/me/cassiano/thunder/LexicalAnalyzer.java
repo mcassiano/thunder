@@ -4,6 +4,15 @@ package me.cassiano.thunder;
 import java.io.FileInputStream;
 import java.io.IOException;
 
+import me.cassiano.thunder.exception.UnexpectedEndOfFile;
+
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_1;
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_2;
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_3;
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_4;
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_END;
+import static me.cassiano.thunder.LexicalAnalyzer.State.Q_START;
+
 public class LexicalAnalyzer {
 
     private static final String BLANK = " ";
@@ -11,13 +20,15 @@ public class LexicalAnalyzer {
     private static final String NEW_LINE_WIN = "\r";
     private static final String TAB = "\t";
 
+    private static final String PIPE = "|";
+
     private static final LexicalAnalyzer instance = new LexicalAnalyzer();
 
     public static LexicalAnalyzer get() {
         return instance;
     }
 
-    public Symbol analyze(FileInputStream fileStream) {
+    public Symbol analyze(FileInputStream fileStream) throws IOException {
 
         State state = State.Q_START;
         String lexeme = "";
@@ -25,10 +36,16 @@ public class LexicalAnalyzer {
 
         while (state != State.Q_END) {
 
-            String charRead = readChar(fileStream);
+            if (state == State.Q_START)
+                lexeme = "";
 
-            if (charRead == null)
-                return null;
+            String charRead;
+
+            try {
+                charRead = readChar(fileStream);
+            } catch (UnexpectedEndOfFile unexpectedEndOfFile) {
+                return new Symbol(Token.EOF);
+            }
 
             if (shouldIgnore(charRead))
                 continue;
@@ -47,34 +64,81 @@ public class LexicalAnalyzer {
                     case APOSTROPHE:
                     case PLUS:
                     case MINUS:
-                    case MULTIPLY:
+                    case ASTERISK:
                     case SEMICOLON:
                     case UNDERSCORE:
+                    case OR:
                         state = State.Q_END;
+                        break;
+
+                    case FORWARD_SLASH:
+                        state = Q_1; // pre-process comment
                         break;
                 }
             }
+
+            else {
+
+                Token tmp = Token.fromString(charRead);
+
+                if (tmp == null) {
+
+                    switch (charRead) {
+                        case PIPE:
+                            state = Q_4;
+                            continue;
+                    }
+                }
+
+                switch (state) {
+
+                    case Q_1:
+                        if (tmp != Token.ASTERISK) {
+                            sym = new Symbol(Token.ASTERISK);
+                            state = Q_END;
+                        }
+                        else
+                            state = Q_2;
+
+                        break;
+
+                    case Q_2:
+                        if (tmp != Token.ASTERISK)
+                            state = Q_2;
+                        else
+                            state = Q_3;
+
+                        break;
+
+                    case Q_3:
+                        if (tmp == Token.FORWARD_SLASH)
+                            state = Q_START;
+                        else if (tmp == Token.ASTERISK)
+                            state = Q_3;
+                        else
+                            state = Q_2;
+                        break;
+                }
+
+            }
+
         }
 
 
         return sym;
     }
 
-    private String readChar(FileInputStream fileStream) {
+    private String readChar(FileInputStream fileStream) throws IOException, UnexpectedEndOfFile {
 
         int _char;
         String tChar;
 
-        try {
-            _char = fileStream.read();
+        _char = fileStream.read();
 
-            if (_char == -1)
-                throw new IOException("EOF");
+        if (_char == -1)
+            throw new UnexpectedEndOfFile();
 
-            tChar = String.valueOf((char) _char);
-        } catch (IOException e) {
-            tChar = null;
-        }
+        tChar = String.valueOf((char) _char);
 
         return tChar;
     }
@@ -88,9 +152,13 @@ public class LexicalAnalyzer {
                 str.equals(BLANK);
     }
 
-    private enum State {
+    enum State {
 
         Q_START,
+        Q_1,
+        Q_2,
+        Q_3,
+        Q_4,
         Q_END
     }
 

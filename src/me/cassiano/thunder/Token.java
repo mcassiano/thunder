@@ -26,8 +26,8 @@ public enum Token {
     COMMA(","),
     PLUS("+"),
     MINUS("-"),
-    MULTIPLY("*"),
-    DIVIDE("/"),
+    ASTERISK("*"),
+    FORWARD_SLASH("/"),
     SEMICOLON(";"),
     BEGIN("begin"),
     END_WHILE("endwhile"),
@@ -59,5 +59,17 @@ public enum Token {
     @Override
     public String toString() {
         return text;
+    }
+
+    public static Token fromString(String text) {
+
+        if (text != null) {
+            for (Token b : Token.values()) {
+                if (text.equalsIgnoreCase(b.text)) {
+                    return b;
+                }
+            }
+        }
+        return null;
     }
 }
