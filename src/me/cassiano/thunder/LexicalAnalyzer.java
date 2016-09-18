@@ -63,10 +63,12 @@ public class LexicalAnalyzer {
                 return new Symbol(Token.EOF);
             }
 
-            if (isBlankChar(currentChar))
+            if (state == State.Q_START &&
+                    isBlankChar(currentChar))
                 continue;
 
-            else if (isNewLine(currentChar)) {
+            if (state == State.Q_START &&
+                    isNewLine(currentChar)) {
                 lineNumber += 1;
                 continue;
             }
