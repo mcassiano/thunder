@@ -226,7 +226,6 @@ public class LexicalAnalyzer {
                 case LEFT_PARENTHESIS:
                 case APOSTROPHE:
                 case PLUS:
-                case UNDERSCORE:
                 case ASTERISK:
                 case SEMICOLON:
                     Symbol sym = new Symbol(token, currentChar);
@@ -246,6 +245,11 @@ public class LexicalAnalyzer {
                 case LESS_THAN:
                     lexeme += currentChar;
                     state = State.Q_5;
+                    break;
+
+                case UNDERSCORE:
+                    lexeme += currentChar;
+                    state = State.Q_8;
                     break;
 
             }
