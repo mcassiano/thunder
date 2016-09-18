@@ -1,7 +1,15 @@
-/* comentario */
+/* inicio do arquivo */
 
 ()
 
-/* oioioioioioisfoisdkfjhdskjhdskjfsdhkjfhkjdsf */
-
 ||
+
+&&
+
+<;
+
+<-
+
+<=
+
+matheus_;

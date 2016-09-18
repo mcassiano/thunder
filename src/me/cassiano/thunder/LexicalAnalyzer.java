@@ -22,17 +22,12 @@
 package me.cassiano.thunder;
 
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PushbackInputStream;
+import java.util.regex.Pattern;
 
 import me.cassiano.thunder.exception.UnexpectedEndOfFile;
-
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_1;
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_2;
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_3;
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_4;
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_END;
-import static me.cassiano.thunder.LexicalAnalyzer.State.Q_START;
+import sun.jvm.hotspot.debugger.cdbg.Sym;
 
 /* Classe responsável pela Análise Léxica */
 public class LexicalAnalyzer {
@@ -43,6 +38,7 @@ public class LexicalAnalyzer {
     private static final String TAB = "\t";
 
     private static final String PIPE = "|";
+    private static final String AMPERSAND = "&";
 
     private static final LexicalAnalyzer instance = new LexicalAnalyzer();
 
@@ -50,104 +46,215 @@ public class LexicalAnalyzer {
         return instance;
     }
 
-    public Symbol analyze(FileInputStream fileStream) throws IOException {
+    public Symbol analyze(PushbackInputStream fileStream) throws IOException {
 
         State state = State.Q_START;
-        String lexeme = "";
         Symbol sym = null;
+        String lexeme = "";
+        Integer lineNumber = 0;
 
         while (state != State.Q_END) {
 
-            if (state == State.Q_START)
-                lexeme = "";
-
-            String charRead;
+            String currentChar;
 
             try {
-                charRead = readChar(fileStream);
+                currentChar = readChar(fileStream);
             } catch (UnexpectedEndOfFile unexpectedEndOfFile) {
                 return new Symbol(Token.EOF);
             }
 
-            if (shouldIgnore(charRead))
+            if (isBlankChar(currentChar))
                 continue;
 
-            lexeme += charRead;
+            else if (isNewLine(currentChar)) {
+                lineNumber += 1;
+                continue;
+            }
 
-            if (SymbolTable.get().hasSymbol(lexeme)) {
+            switch (state) {
 
-                sym = SymbolTable.get().getSymbol(lexeme);
+                case Q_START:
+                    ProcessingResponse response = processQStart(currentChar);
+                    state = response.getStateResponse();
+                    lexeme += response.getLexeme();
+                    sym = response.getSymbol();
+                    break;
 
-                switch (sym.getToken()) {
-
-                    case EQUALS:
-                    case LEFT_PARENTHESIS:
-                    case RIGHT_PARENTHESIS:
-                    case APOSTROPHE:
-                    case PLUS:
-                    case MINUS:
-                    case ASTERISK:
-                    case SEMICOLON:
-                    case UNDERSCORE:
-                    case OR:
+                case Q_1:
+                    /* current state: Q1, if next char is *, move to Q2 otherwise, return Token */
+                    if (Token.fromString(currentChar) != Token.ASTERISK) {
+                        fileStream.unread(currentChar.charAt(0));
+                        sym = SymbolTable.get().getSymbol(currentChar);
                         state = State.Q_END;
-                        break;
-
-                    case FORWARD_SLASH:
-                        state = Q_1; // pre-process comment
-                        break;
-                }
-            } else {
-
-                Token tmp = Token.fromString(charRead);
-
-                if (tmp == null) {
-
-                    switch (charRead) {
-                        case PIPE:
-                            state = Q_4;
-                            continue;
                     }
-                }
+                    else
+                        state = State.Q_2;
+                    break;
 
-                switch (state) {
+                case Q_2:
+                    /* current state: Q2, if next char is not *, just keep looping here */
 
-                    case Q_1:
-                        if (tmp != Token.ASTERISK) {
-                            sym = new Symbol(Token.ASTERISK);
-                            state = Q_END;
-                        } else
-                            state = Q_2;
+                    if (Token.fromString(currentChar) != Token.ASTERISK)
+                        state = State.Q_2;
+                    else
+                        state = State.Q_3;
 
-                        break;
+                    break;
 
-                    case Q_2:
-                        if (tmp != Token.ASTERISK)
-                            state = Q_2;
+                case Q_3:
+
+                    if (Token.fromString(currentChar) == Token.ASTERISK)
+                        state = State.Q_3;
+
+                    else if (Token.fromString(currentChar) != Token.FORWARD_SLASH &&
+                            Token.fromString(currentChar) != Token.ASTERISK)
+                        state = State.Q_2;
+
+                    else if (Token.fromString(currentChar) == Token.FORWARD_SLASH)
+                        state = State.Q_START;
+
+                    break;
+
+                case Q_4:
+                    /* current state: Q4, a lexeme+currentChar is either != or >=
+                     * otherwise just return the latest symbol */
+
+                    if (SymbolTable.get().hasSymbol(lexeme + currentChar)) {
+                        lexeme += currentChar;
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    } else {
+                        fileStream.unread(currentChar.charAt(0));
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    }
+
+                    break;
+
+                case Q_5:
+                    /* current state: Q5, a lexeme+currentChar is either <- or <=
+                     * otherwise just return the latest symbol */
+
+                    if (SymbolTable.get().hasSymbol(lexeme + currentChar)) {
+                        lexeme += currentChar;
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    } else {
+                        fileStream.unread(currentChar.charAt(0));
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    }
+
+                    break;
+
+
+                case Q_6:
+                    /* current state: Q6, if currentChar is PIPE, then return Token || */
+                    if (currentChar.equals(PIPE)) {
+                        lexeme += currentChar;
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    }
+                    break;
+
+                case Q_7:
+                    /* current state: Q7, if currentChar is AMPERSAND, then return Token && */
+                    if (currentChar.equals(AMPERSAND)) {
+                        lexeme += currentChar;
+                        sym = SymbolTable.get().getSymbol(lexeme);
+                        state = State.Q_END;
+                    }
+                    break;
+
+                case Q_8:
+                    /* current state: Q8, read the ID */
+
+                    if (isLetterDigitOrUnderscore(currentChar)) {
+                        lexeme += currentChar;
+                        state = State.Q_8;
+                    }
+                    else {
+                        fileStream.unread(currentChar.charAt(0));
+
+                        /* is reserved word or symbol has been seen? */
+                        if (SymbolTable.get().hasSymbol(lexeme))
+                            sym = SymbolTable.get().getSymbol(lexeme);
                         else
-                            state = Q_3;
+                            sym = new Symbol(Token.ID, lexeme);
 
-                        break;
+                        state = State.Q_END;
+                    }
 
-                    case Q_3:
-                        if (tmp == Token.FORWARD_SLASH)
-                            state = Q_START;
-                        else if (tmp == Token.ASTERISK)
-                            state = Q_3;
-                        else
-                            state = Q_2;
-                        break;
-                }
+                    break;
+
 
             }
 
-        }
 
+        }
 
         return sym;
     }
 
-    private String readChar(FileInputStream fileStream) throws IOException, UnexpectedEndOfFile {
+    private ProcessingResponse processQStart(String currentChar) {
+
+        Token token = Token.fromString(currentChar);
+        State state = State.Q_START;
+        String lexeme = "";
+
+        if (token == null) {
+
+            if (currentChar.equals(PIPE)) {
+                lexeme += currentChar;
+                state = State.Q_6;
+            } else if (currentChar.equals(AMPERSAND)) {
+                lexeme += currentChar;
+                state = State.Q_7;
+            } else if (isLetterOrUnderscore(currentChar)) {
+                lexeme += currentChar;
+                state = State.Q_8;
+            }
+
+        } else {
+
+            switch (token) {
+
+                case EQUALS:
+                case RIGHT_PARENTHESIS:
+                case LEFT_PARENTHESIS:
+                case APOSTROPHE:
+                case PLUS:
+                case UNDERSCORE:
+                case ASTERISK:
+                case SEMICOLON:
+                    Symbol sym = new Symbol(token, currentChar);
+                    state = State.Q_END;
+                    return new ProcessingResponse(state, lexeme, sym);
+
+                case NOT:
+                case GREATER_THAN:
+                    lexeme += currentChar;
+                    state = State.Q_4;
+                    break;
+
+                case FORWARD_SLASH:
+                    state = State.Q_1;
+                    break;
+
+                case LESS_THAN:
+                    lexeme += currentChar;
+                    state = State.Q_5;
+                    break;
+
+            }
+        }
+
+
+        return new ProcessingResponse(state, lexeme, null);
+
+    }
+
+    private String readChar(PushbackInputStream fileStream) throws IOException, UnexpectedEndOfFile {
 
         int _char;
         String tChar;
@@ -162,13 +269,30 @@ public class LexicalAnalyzer {
         return tChar;
     }
 
-    private boolean shouldIgnore(String str) {
+    private boolean isBlankChar(String str) {
 
         return str.isEmpty() ||
-                str.equals(NEW_LINE) ||
-                str.equals(NEW_LINE_WIN) ||
                 str.equals(TAB) ||
                 str.equals(BLANK);
+    }
+
+    private boolean isNewLine(String str) {
+
+        return str.equals(NEW_LINE) ||
+                str.equals(NEW_LINE_WIN);
+    }
+
+    private boolean isLetterOrUnderscore(String str) {
+
+        String pattern = "[A-Za-z_]";
+        return Pattern.matches(pattern, str);
+
+    }
+
+    private boolean isLetterDigitOrUnderscore(String str) {
+
+        String pattern = "[A-Za-z0-9_]";
+        return Pattern.matches(pattern, str);
     }
 
     enum State {
@@ -178,7 +302,36 @@ public class LexicalAnalyzer {
         Q_2,
         Q_3,
         Q_4,
+        Q_5,
+        Q_6,
+        Q_7,
+        Q_8,
         Q_END
+    }
+
+    private class ProcessingResponse {
+
+        private State stateResponse;
+        private String lexeme;
+        private Symbol symbol;
+
+        public ProcessingResponse(State stateResponse, String lexeme, Symbol symbol) {
+            this.stateResponse = stateResponse;
+            this.lexeme = lexeme;
+            this.symbol = symbol;
+        }
+
+        public State getStateResponse() {
+            return stateResponse;
+        }
+
+        public String getLexeme() {
+            return lexeme;
+        }
+
+        public Symbol getSymbol() {
+            return symbol;
+        }
     }
 
 }

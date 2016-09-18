@@ -89,7 +89,7 @@ public enum Token {
 
         if (text != null) {
             for (Token b : Token.values()) {
-                if (text.equalsIgnoreCase(b.text)) {
+                if (text.equals(b.text)) {
                     return b;
                 }
             }

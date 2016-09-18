@@ -26,6 +26,8 @@ package me.cassiano.thunder;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PushbackInputStream;
 
 import me.cassiano.thunder.exception.UnexpectedEndOfFile;
 
@@ -46,10 +48,11 @@ public class Main {
             System.out.print("Wrong usage! Try ./lc <inputfile> <outputfile>");
         }
 
-        FileInputStream stream;
+        PushbackInputStream stream;
 
         try {
-            stream = new FileInputStream(sourceFile);
+            InputStream is = new FileInputStream(sourceFile);
+            stream = new PushbackInputStream(is);
         } catch (FileNotFoundException e) {
             stream = null;
             System.out.print(String.format("Source file (%s) not found!", sourceFile));
