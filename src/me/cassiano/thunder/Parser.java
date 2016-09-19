@@ -11,7 +11,6 @@ public class Parser {
     private Symbol currentToken;
     private String lexema;
 
-
     public Parser() {
         this.lexema = "";
     }
