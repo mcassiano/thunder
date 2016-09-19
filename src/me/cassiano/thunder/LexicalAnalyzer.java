@@ -27,7 +27,7 @@ import java.io.PushbackInputStream;
 import java.util.regex.Pattern;
 
 import me.cassiano.thunder.exception.UnexpectedEndOfFile;
-import sun.jvm.hotspot.debugger.cdbg.Sym;
+//import sun.jvm.hotspot.debugger.cdbg.Sym;
 
 /* Classe responsável pela Análise Léxica */
 public class LexicalAnalyzer {
@@ -39,6 +39,7 @@ public class LexicalAnalyzer {
 
     private static final String PIPE = "|";
     private static final String AMPERSAND = "&";
+    private static final String QUOTE = "\"";
 
     private static final LexicalAnalyzer instance = new LexicalAnalyzer();
 
@@ -188,6 +189,35 @@ public class LexicalAnalyzer {
                     }
 
                     break;
+                case Q_9:
+                    /* current state: Q9, already read the first quote in String */
+
+                    if(currentChar.equals(QUOTE)) { // FALTANDO estado de QUEBRA de linha
+                        lexeme += currentChar;
+                        state = State.Q_END;
+                        sym = new Symbol(Token.STRING_LITERAL, lexeme);
+                    } else{
+                        lexeme += currentChar;
+                        state = State.Q_10;
+
+                    }
+
+                    break;
+
+                case Q_10:
+                    /* current state: Q10, read value of String between quotes */
+
+                    if(!currentChar.equals(QUOTE)){ // FALTANDO estado de QUEBRA de linha
+                        lexeme+= currentChar;
+                        state = State.Q_10;
+                    } else{
+                        lexeme += currentChar;
+                        sym = new Symbol(Token.STRING_LITERAL, lexeme);
+                        state = State.Q_END;
+                    }
+
+
+                    break;
 
 
             }
@@ -215,6 +245,9 @@ public class LexicalAnalyzer {
             } else if (isLetterOrUnderscore(currentChar)) {
                 lexeme += currentChar;
                 state = State.Q_8;
+            } else if (currentChar.equals(QUOTE)) {
+                lexeme += currentChar;
+                state = State.Q_9;
             }
 
         } else {
@@ -301,6 +334,16 @@ public class LexicalAnalyzer {
         return Pattern.matches(pattern, str);
     }
 
+    private boolean isDigit(String str){
+        String pattern = "[0-9]";
+        return Pattern.matches(pattern, str);
+    }
+
+    private boolean isHex(String str){
+        String pattern = "[A-F0-9]";
+        return Pattern.matches(pattern, str);
+    }
+
     enum State {
 
         Q_START,
@@ -312,6 +355,12 @@ public class LexicalAnalyzer {
         Q_6,
         Q_7,
         Q_8,
+        Q_9,
+        Q_10,
+        Q_11,
+        Q_12,
+        Q_13,
+        Q_14,
         Q_END
     }
 
