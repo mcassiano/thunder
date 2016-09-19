@@ -27,6 +27,7 @@ package me.cassiano.thunder;
 
 public enum Token {
 
+
     ID("[A-Za-z_][A-Za-z_0-9]*"),
     FINAL("final"),
     INT("int"),
@@ -65,7 +66,9 @@ public enum Token {
     APOSTROPHE("'"),
     BOOLEAN("boolean"),
     EOF("eof"),
-    UNDERSCORE("_");
+    UNDERSCORE("_"),
+    STRING_LITERAL("[0-9A-Za-z]"),
+    CONSTANT("[0-9]");
 
     private final String text;
 
