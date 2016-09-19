@@ -216,9 +216,64 @@ public class LexicalAnalyzer {
                         state = State.Q_END;
                     }
 
+                    break;
+
+                case Q_11:
+                    /* current state: Q11 after reading '0', read value of a constant, HEX ou decimal */
+
+                    if(isDigit(currentChar)){
+                        lexeme += currentChar;
+                        state = State.Q_14;
+                    } else if( currentChar.equals("x")){
+                        lexeme += currentChar;
+                        state = State.Q_12;
+                    } else{
+                        fileStream.unread(currentChar.charAt(0));
+                        state = State.Q_END;
+                        sym = new Symbol(Token.CONSTANT, lexeme);
+
+                    }
+
 
                     break;
 
+                case Q_12:
+                    /* current state: Q12 , read a HEX digit  */
+
+                    if(isHex(currentChar)){
+                        lexeme += currentChar;
+                        state = State.Q_13;
+                    }
+
+                    break;
+
+                case Q_13:
+                    /* current state Q13, read the second HEX digit */
+
+                    if(isHex(currentChar)){
+                        lexeme += currentChar;
+                        state = State.Q_END;
+                        sym = new Symbol(Token.CONSTANT_HEX, lexeme);
+
+                    }
+
+                    break;
+
+                case Q_14:
+                    /*current state Q14, read digit */
+
+                    if(isDigit(currentChar)){
+                        lexeme += currentChar;
+                        state = State.Q_14;
+                    } else {
+                        //devolve c
+                        fileStream.unread(currentChar.charAt(0));
+                        state = State.Q_END;
+                        sym = new Symbol(Token.CONSTANT, lexeme);
+
+                    }
+
+                    break;
 
             }
 
@@ -248,6 +303,12 @@ public class LexicalAnalyzer {
             } else if (currentChar.equals(QUOTE)) {
                 lexeme += currentChar;
                 state = State.Q_9;
+            } else if (currentChar.equals("0")){ // nao esta lendo o diigito 0 sozinho
+                lexeme += currentChar;
+                state = State.Q_11;
+            } else if (Pattern.matches("[1-9]",currentChar) ){
+                lexeme +=currentChar;
+                state = State.Q_14;
             }
 
         } else {

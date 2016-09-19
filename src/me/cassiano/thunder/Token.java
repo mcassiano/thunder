@@ -68,7 +68,9 @@ public enum Token {
     EOF("eof"),
     UNDERSCORE("_"),
     STRING_LITERAL("[0-9A-Za-z]"),
-    CONSTANT("[0-9]");
+    CONSTANT("[0-9]"),
+    CONSTANT_HEX("[0-9A-F]");
+
 
     private final String text;
 
