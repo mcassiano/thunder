@@ -152,7 +152,7 @@ public class LexicalAnalyzer {
 
 
                 case Q_6:
-                    /* current state: Q6, if currentChar is PIPE, then return Token || */
+                    /* current state: Q6, if currentChar is PIPE, then return Token OR ("||") */
                     if (currentChar.equals(PIPE)) {
                         lexeme += currentChar;
                         sym = SymbolTable.get().getSymbol(lexeme);
@@ -161,7 +161,7 @@ public class LexicalAnalyzer {
                     break;
 
                 case Q_7:
-                    /* current state: Q7, if currentChar is AMPERSAND, then return Token && */
+                    /* current state: Q7, if currentChar is AMPERSAND, then return Token AND ("&&") */
                     if (currentChar.equals(AMPERSAND)) {
                         lexeme += currentChar;
                         sym = SymbolTable.get().getSymbol(lexeme);
@@ -317,7 +317,7 @@ public class LexicalAnalyzer {
                 case EQUALS:
                 case RIGHT_PARENTHESIS:
                 case LEFT_PARENTHESIS:
-                case APOSTROPHE: // acho que era pra ser virgula
+                case COMMA:
                 case PLUS:
                 case ASTERISK:
                 case SEMICOLON:
