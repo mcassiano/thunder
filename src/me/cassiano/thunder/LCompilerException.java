@@ -33,5 +33,5 @@ public class LCompilerException {
     // Invalid Character Exception - para token não esperado
 
     // End Of File Exception - para fim de arquivo não esperado
-    
+
 }
