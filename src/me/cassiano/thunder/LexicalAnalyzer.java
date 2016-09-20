@@ -260,13 +260,13 @@ public class LexicalAnalyzer {
                     break;
 
                 case Q_14:
-                    /*current state Q14, read digit */
+                    /*current state Q14, read digit
+                    * otherwise just return the latest symbol */
 
                     if(isDigit(currentChar)){
                         lexeme += currentChar;
                         state = State.Q_14;
                     } else {
-                        //devolve c
                         fileStream.unread(currentChar.charAt(0));
                         state = State.Q_END;
                         sym = new Symbol(Token.CONSTANT, lexeme);
@@ -274,7 +274,6 @@ public class LexicalAnalyzer {
                     }
 
                     break;
-
             }
 
 
@@ -303,7 +302,7 @@ public class LexicalAnalyzer {
             } else if (currentChar.equals(QUOTE)) {
                 lexeme += currentChar;
                 state = State.Q_9;
-            } else if (currentChar.equals("0")){ // nao esta lendo o diigito 0 sozinho
+            } else if (currentChar.equals("0")){ // nao esta lendo o digito 0 sozinho
                 lexeme += currentChar;
                 state = State.Q_11;
             } else if (Pattern.matches("[1-9]",currentChar) ){
@@ -318,7 +317,7 @@ public class LexicalAnalyzer {
                 case EQUALS:
                 case RIGHT_PARENTHESIS:
                 case LEFT_PARENTHESIS:
-                case APOSTROPHE:
+                case APOSTROPHE: // acho que era pra ser virgula
                 case PLUS:
                 case ASTERISK:
                 case SEMICOLON:
