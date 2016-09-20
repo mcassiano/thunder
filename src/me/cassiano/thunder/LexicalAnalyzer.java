@@ -302,7 +302,7 @@ public class LexicalAnalyzer {
             } else if (currentChar.equals(QUOTE)) {
                 lexeme += currentChar;
                 state = State.Q_9;
-            } else if (currentChar.equals("0")){ // nao esta lendo o digito 0 sozinho
+            } else if (currentChar.equals("0")){
                 lexeme += currentChar;
                 state = State.Q_11;
             } else if (Pattern.matches("[1-9]",currentChar) ){
