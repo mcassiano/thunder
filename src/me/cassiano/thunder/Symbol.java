@@ -18,6 +18,7 @@
  * @author Mateus Loures do Nascimento      Matricula: 511709
  * @author Matheus Cassiano Cândido         Matricula: 454481
  * @version 0.1 11/09/2016
+ * @version 0.2 19/09/2016
  *
  */
 
