@@ -25,6 +25,11 @@
 package me.cassiano.thunder;
 
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PushbackInputStream;
+
+import static me.cassiano.thunder.Token.*;
+
 
 /* Classe Responsável pela Análise Sintática */
 
@@ -50,15 +55,24 @@ import java.io.FileInputStream;
 
 public class Parser {
 
-    private LexicalAnalyzer lexAn;
+    //private LexicalAnalyzer lexAn;
     private Symbol currentToken;
     private String lexema;
+    private PushbackInputStream fileStream;
+    public static long linenumber;
 
-    public Parser() {
-        this.lexema = "";
+    public Parser(PushbackInputStream fileStream) throws IOException {
+        this.fileStream=fileStream;
+        this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
+        System.out.println(currentToken.getLexeme());
     }
 
-    public void casaToken (byte tokenRecebido) {
+    public void casaToken (Token tokenrecebido) throws IOException {
+
+        if(currentToken.equals(tokenrecebido)){
+            currentToken = LexicalAnalyzer.get().analyze(fileStream);
+        }//else erro
+
         /*
         * se tokenAtual = tokenRecebido
         *   chama Analisador Léxico
@@ -81,8 +95,37 @@ public class Parser {
         * */
     }
 
-    public void run(FileInputStream fileStream){
-        //this.currentToken = lexAn.analyze(fileStream).g;
+    public void run(PushbackInputStream fileStream) throws IOException {
+        this.currentToken = LexicalAnalyzer.get().analyze(fileStream);
+    }
+
+    public void start() throws IOException {
+        //chamar declaration ;
+        //chamar commands;
+    }
+
+    public void imprimeToken(Token token){
+        System.out.println(token.toString());
+    }
+
+    public void declaration() throws IOException {
+
+        switch (currentToken.getToken()){
+            case FINAL:
+                casaToken(FINAL);
+                break;
+            case INT:
+                casaToken(INT);
+                break;
+            case BOOLEAN:
+                casaToken(BOOLEAN);
+                break;
+            case STRING:
+                casaToken(STRING);
+                break;
+        }
 
     }
+
+
 }

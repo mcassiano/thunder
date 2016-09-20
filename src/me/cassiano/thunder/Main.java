@@ -63,10 +63,12 @@ public class Main {
 
             Symbol sym;
 
-            while ((sym = LexicalAnalyzer.get().analyze(stream)).getToken() != Token.EOF) {
+           /* while ((sym = LexicalAnalyzer.get().analyze(stream)).getToken() != Token.EOF) {
                 System.out.println(String.format("TOKEN: %s. LEXEME: %s",
                         sym.getToken().name(), sym.getLexeme()));
-            }
+            }*/
+
+           Parser p=new Parser(stream);
 
 
         }
