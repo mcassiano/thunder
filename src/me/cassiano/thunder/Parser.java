@@ -58,10 +58,28 @@ public class Parser {
         this.lexema = "";
     }
 
+    public void casaToken (byte tokenRecebido) {
+        /*
+        * se tokenAtual = tokenRecebido
+        *   chama Analisador Léxico
+        * senão ERRO
+        *
+        * if(tokenRecebido != (byte)registro.getNumToken())
+		{
+			if(registro.getNumToken()==(byte)65535)
+			{
+				System.out.println(registro.getCont()+":fim de arquivo não esperado.");
+				System.exit(0);
+			}
+			System.out.println(registro.getCont()+":token não esperado.");
+			System.exit(0);
 
-//System.out.println("");
-
-
+		}else{
+			registro = anLex.automato(registro.getMarcado(), registro.getC());
+		}
+        *
+        * */
+    }
 
     public void run(FileInputStream fileStream){
         //this.currentToken = lexAn.analyze(fileStream).g;
