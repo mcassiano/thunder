@@ -24,14 +24,34 @@
 
 package me.cassiano.thunder;
 
-import java.io.IOException;
 
 /* Classe Responsável pelo Tratamento de Excecoes do Compilador */
 
-public class LCompilerException {
+
+
+//class LCompilerException extends Exception {
 
     // Invalid Character Exception - para token não esperado
-
     // End Of File Exception - para fim de arquivo não esperado
 
-}
+    class EndOfFileException extends Exception{
+        EndOfFileException (String message) {
+            super(message);
+            // linenumber+":fim de arquivo não esperado.";
+        }
+    }
+
+    class InvalidCharacterException {
+        InvalidCharacterException (String message) {
+            super(message);
+            // linenumber+":token nao esperado[lexema]";
+        }
+    }
+
+    class FileNotFoundException {
+        FileNotFoundException (String message) {
+            super(message);
+            // "Arquivo nao encontrado.";
+        }
+    }
+//}
