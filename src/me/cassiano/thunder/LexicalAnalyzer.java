@@ -91,7 +91,7 @@ public class LexicalAnalyzer {
                     /* current state: Q1, if next char is *, move to Q2 otherwise, return Token */
                     if (Token.fromString(currentChar) != Token.ASTERISK) {
                         fileStream.unread(currentChar.charAt(0));
-                        sym = SymbolTable.get().getSymbol(currentChar);
+                        sym = SymbolTable.get().getSymbol(Token.FORWARD_SLASH.toString());
                         state = State.Q_END;
                     }
                     else
