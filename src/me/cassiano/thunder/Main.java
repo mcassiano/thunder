@@ -69,6 +69,7 @@ public class Main {
             }*/
 
            Parser p=new Parser(stream);
+            p.start();
 
 
         }

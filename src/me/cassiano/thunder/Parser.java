@@ -57,21 +57,24 @@ public class Parser {
 
     //private LexicalAnalyzer lexAn;
     private Symbol currentToken;
-    private String lexema;
+    //private String lexema;
     private PushbackInputStream fileStream;
     public static long linenumber;
 
     public Parser(PushbackInputStream fileStream) throws IOException {
         this.fileStream=fileStream;
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
-        System.out.println(currentToken.getLexeme());
     }
 
     public void casaToken (Token tokenrecebido) throws IOException {
 
-        if(currentToken.equals(tokenrecebido)){
+        if(currentToken.getToken().equals(tokenrecebido)){
+            System.out.println("lexema: "+currentToken.getLexeme()+" token: "+currentToken.getToken().name());
             currentToken = LexicalAnalyzer.get().analyze(fileStream);
-        }//else erro
+        }else if (currentToken.getToken().equals(Token.EOF))
+            System.out.println("ERRO - EOF");
+        else
+            System.out.println("ERRO - lex  '"+currentToken.getLexeme()+"' nao esperado");
 
         /*
         * se tokenAtual = tokenRecebido
@@ -101,6 +104,7 @@ public class Parser {
 
     public void start() throws IOException {
         //chamar declaration ;
+        declaration();
         //chamar commands;
     }
 
@@ -123,7 +127,38 @@ public class Parser {
             case STRING:
                 casaToken(STRING);
                 break;
+            default:
+                System.out.println("ERRO - lex  '"+currentToken.getLexeme()+"' nao esperado");// FAZER EXCEPTION
+                break;
         }
+
+        casaToken(ID);
+
+        if(currentToken.getToken().equals(Token.ATTRIBUTION) ){
+            casaToken(ATTRIBUTION);
+            casaToken(CONSTANT);
+        }
+
+        while(currentToken.getToken().equals(Token.COMMA)){
+            casaToken(COMMA);
+            casaToken(ID);
+
+            if(currentToken.getToken().equals(Token.ATTRIBUTION) ){
+                casaToken(ATTRIBUTION);
+                casaToken(CONSTANT);
+            }
+
+        }
+
+
+
+
+
+        //casaToken(INT);
+
+        //casaToken(ATTRIBUTION);
+        //casaToken(CONSTANT);
+        //casaToken(SEMICOLON);
 
     }
 

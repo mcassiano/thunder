@@ -34,6 +34,13 @@ package me.cassiano.thunder;
     // Invalid Character Exception - para token não esperado
     // End Of File Exception - para fim de arquivo não esperado
 
+class UnexpectedEndOfFileException extends Exception{
+    UnexpectedEndOfFileException () {
+        super("linenumber+\":fim de arquivo não esperado.");
+        // linenumber+":fim de arquivo não esperado.";
+    }
+}
+
     class EndOfFileException extends Exception{
         EndOfFileException (String message) {
             super(message);
@@ -41,14 +48,14 @@ package me.cassiano.thunder;
         }
     }
 
-    class InvalidCharacterException {
-        InvalidCharacterException (String message) {
-            super(message);
+    class InvalidCharacterException extends Exception{
+        InvalidCharacterException () {
+            super("");
             // linenumber+":token nao esperado[lexema]";
         }
     }
 
-    class FileNotFoundException {
+    class FileNotFoundException extends Exception{
         FileNotFoundException (String message) {
             super(message);
             // "Arquivo nao encontrado.";
