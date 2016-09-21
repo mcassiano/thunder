@@ -325,6 +325,7 @@ public class LexicalAnalyzer {
                 case PLUS:
                 case ASTERISK:
                 case SEMICOLON:
+                case MINUS:
                     Symbol sym = new Symbol(token, currentChar);
                     state = State.Q_END;
                     return new ProcessingResponse(state, lexeme, sym);

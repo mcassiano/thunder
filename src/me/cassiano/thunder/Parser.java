@@ -159,7 +159,9 @@ public class Parser {
         casaToken(ID);
         casaToken(ATTRIBUTION);
 
-        exp_product();
+        exp_sum();
+
+        //exp_product();
 
         //exp_value();
 
@@ -213,8 +215,8 @@ public class Parser {
     }
    */
 
-    /*
     public void exp_sum() throws IOException {
+
         if (currentToken.getToken() == PLUS)
             casaToken(PLUS);
         else if (currentToken.getToken() == MINUS)
@@ -222,18 +224,26 @@ public class Parser {
 
         exp_product();
 
-        while ( currentToken.getToken() == PLUS || currentToken.getToken() == MINUS || currentToken.getToken() == OR ) {
-            if(currentToken.getToken() == PLUS)
-                casaToken(PLUS);
-            else if (currentToken.getToken() == MINUS)
-                casaToken(MINUS);
-            else
-                casaToken(OR);
+        while ( currentToken.getToken() == PLUS ||
+                currentToken.getToken() == MINUS ||
+                currentToken.getToken() == OR )
+        {
+
+            switch (currentToken.getToken()) {
+                case PLUS:
+                    casaToken(PLUS);
+                    break;
+                case MINUS:
+                    casaToken(MINUS);
+                    break;
+                default:
+                    casaToken(OR);
+                    break;
+            }
 
             exp_product();
         }
     }
-    */
 
     public void exp_product() throws IOException {
         exp_value();
