@@ -245,9 +245,9 @@ public class Parser {
                 case ASTERISK:
                     casaToken(ASTERISK);
                     break;
-                /*case FORWARD_SLASH:
+                case FORWARD_SLASH:
                     casaToken(FORWARD_SLASH);
-                    break;*/
+                    break;
                 default:
                     casaToken(AND);
                     break;
