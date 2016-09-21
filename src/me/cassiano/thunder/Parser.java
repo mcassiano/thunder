@@ -105,16 +105,18 @@ public class Parser {
     public void start() throws IOException {
         //chamar declaration ;
         declaration();
+        // casa token ponto-e-virgula?
         //chamar commands;
+        commands();
     }
 
-    public void imprimeToken(Token token){
+    public void imprimeToken(Token token) {
         System.out.println(token.toString());
     }
 
     public void declaration() throws IOException {
 
-        switch (currentToken.getToken()){
+        switch (currentToken.getToken()) {
             case FINAL:
                 casaToken(FINAL);
                 break;
@@ -127,32 +129,100 @@ public class Parser {
             case STRING:
                 casaToken(STRING);
                 break;
-            default:
-                System.out.println("ERRO - lex  '"+currentToken.getLexeme()+"' nao esperado");// FAZER EXCEPTION
-                break;
+            /*default:
+                System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
+                break;*/
         }
 
         casaToken(ID);
 
-        if(currentToken.getToken().equals(Token.ATTRIBUTION) ){
+        if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
             casaToken(ATTRIBUTION);
             casaToken(CONSTANT);
         }
 
-        while(currentToken.getToken().equals(Token.COMMA)){
+        while (currentToken.getToken().equals(Token.COMMA)) {
             casaToken(COMMA);
             casaToken(ID);
 
-            if(currentToken.getToken().equals(Token.ATTRIBUTION) ){
+            if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
                 casaToken(ATTRIBUTION);
                 casaToken(CONSTANT);
             }
 
         }
+    }
 
+    public void commands() throws IOException {
 
+    }
 
+    public void logic_operators () throws IOException {
+        switch (currentToken.getToken()) {
+            case LESS_THAN:
+                casaToken(LESS_THAN);
+                break;
+            case GREATER_THAN:
+                casaToken(GREATER_THAN);
+                break;
+            case LESS_THAN_EQUALS:
+                casaToken(LESS_THAN_EQUALS);
+                break;
+            case GREATER_THAN_EQUALS:
+                casaToken(GREATER_THAN_EQUALS);
+                break;
+            case NOT_EQUALS:
+                casaToken(NOT_EQUALS);
+                break;
+            case EQUALS:
+                casaToken(EQUALS);
+                break;
+            /*default:
+                System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
+                break;*/
+        }
+    }
 
+    public void expression() throws IOException {
+        if (currentToken.getToken() == LESS_THAN ||
+                currentToken.getToken() == GREATER_THAN ||
+                currentToken.getToken() == LESS_THAN_EQUALS ||
+                currentToken.getToken() == GREATER_THAN_EQUALS ||
+                currentToken.getToken() == NOT_EQUALS ||
+                currentToken.getToken() == EQUALS)
+        {
+            logic_operators(); // casa token está dentro desse metodo
+
+            exp_sum();
+
+        } else {
+            System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
+        }
+    }
+
+    public void exp_sum() throws IOException {
+        if (currentToken.getToken() == PLUS)
+            casaToken(PLUS);
+        else if (currentToken.getToken() == MINUS)
+            casaToken(MINUS);
+
+        exp_product();
+
+        while ( currentToken.getToken() == PLUS || currentToken.getToken() == MINUS || currentToken.getToken() == OR ) {
+            if(currentToken.getToken() == PLUS)
+                casaToken(PLUS);
+            else if (currentToken.getToken() == MINUS)
+                casaToken(MINUS);
+            else
+                casaToken(OR);
+
+            exp_product();
+        }
+    }
+
+    public void exp_product() {
+
+    }
 
         //casaToken(INT);
 
