@@ -159,7 +159,9 @@ public class Parser {
         casaToken(ID);
         casaToken(ATTRIBUTION);
 
-        exp_sum();
+        expression();
+
+        //exp_sum();
 
         //exp_product();
 
@@ -185,15 +187,18 @@ public class Parser {
             case NOT_EQUALS:
                 casaToken(NOT_EQUALS);
                 break;
-            case EQUALS:
+            default:
                 casaToken(EQUALS);
                 break;
-            /*default:
+            /*case EQUALS:
+                casaToken(EQUALS);
+                break;
+            default:
                 System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
                 break;*/
         }
     }
-/*
+
     public void expression() throws IOException {
 
         exp_sum();
@@ -209,11 +214,10 @@ public class Parser {
 
             exp_sum();
 
-        } else {
+        } /*else {
             System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
-        }
+        }*/
     }
-   */
 
     public void exp_sum() throws IOException {
 
