@@ -103,10 +103,8 @@ public class Parser {
     }
 
     public void start() throws IOException {
-        //chamar declaration ;
         declaration();
-        // casa token ponto-e-virgula?
-        //chamar commands;
+        casaToken(SEMICOLON);
         commands();
     }
 
@@ -154,7 +152,7 @@ public class Parser {
     }
 
     public void commands() throws IOException {
-
+        System.out.println("tô em commands");
     }
 
     public void logic_operators () throws IOException {
@@ -229,8 +227,5 @@ public class Parser {
         //casaToken(ATTRIBUTION);
         //casaToken(CONSTANT);
         //casaToken(SEMICOLON);
-
-    }
-
 
 }
