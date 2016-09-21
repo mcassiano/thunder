@@ -126,10 +126,14 @@ public class Parser {
             case BOOLEAN:
                 casaToken(BOOLEAN);
                 break;
+            default:
+                casaToken(STRING);
+                break;
+            /*
             case STRING:
                 casaToken(STRING);
                 break;
-            /*default:
+            default:
                 System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
                 break;*/
         }
@@ -154,20 +158,76 @@ public class Parser {
     }
 
     public void commands() throws IOException {
-        System.out.println("tô em commands");
 
-        casaToken(ID);
+        System.out.println("\ttô em commands");
+
+        /*casaToken(ID);
         casaToken(ATTRIBUTION);
+        expression();*/
 
-        expression();
+        switch (currentToken.getToken()) {
+            case ID:
+                casaToken(ID);
+                casaToken(ATTRIBUTION);
+                expression();
+                break;
 
-        //exp_sum();
+            case READ_LINE:
+                casaToken(READ_LINE);
+                casaToken(LEFT_PARENTHESIS);
+                casaToken(ID);
+                casaToken(RIGHT_PARENTHESIS);
+                break;
 
-        //exp_product();
+            case WRITE:
+                casaToken(WRITE);
+                casaToken(LEFT_PARENTHESIS);
 
-        //exp_value();
+                expression();
 
-        //expression();
+                while (currentToken.getToken()==COMMA) {
+                    casaToken(COMMA);
+                    expression();
+                }
+
+                casaToken(RIGHT_PARENTHESIS);
+                break;
+
+            case WRITE_LINE:
+                casaToken(WRITE_LINE);
+                casaToken(LEFT_PARENTHESIS);
+
+                expression();
+
+                while (currentToken.getToken()==COMMA) {
+                    casaToken(COMMA);
+                    expression();
+                }
+
+                casaToken(RIGHT_PARENTHESIS);
+                break;
+
+            /*case WHILE:
+                casaToken(WHILE);
+                casaToken(LEFT_PARENTHESIS);
+
+                expression();
+
+                casaToken(RIGHT_PARENTHESIS);
+
+                if (currentToken.getToken() == BEGIN) {
+                    casaToken(BEGIN);
+
+                    while (currentToken.getToken()==COMMA) {
+                        casaToken(COMMA);
+                        expression();
+                    }
+
+
+                } else commands();
+
+                break;*/
+        }
     }
 
     public void logic_operators () throws IOException {
@@ -214,9 +274,7 @@ public class Parser {
 
             exp_sum();
 
-        } /*else {
-            System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
-        }*/
+        }
     }
 
     public void exp_sum() throws IOException {
@@ -271,32 +329,32 @@ public class Parser {
         }
     }
 
-
     public void exp_value() throws IOException {
         switch (currentToken.getToken()){
-            /*case LEFT_PARENTHESIS:
+            case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
                 expression();
                 casaToken(RIGHT_PARENTHESIS);
-                break;*/
+                break;
             case ID:
                 casaToken(ID);
-                break;
-            default:
-                casaToken(CONSTANT);
                 break;
             case NOT:
                 casaToken(NOT);
                 exp_value();
                 break;
+            case STRING_LITERAL:
+                casaToken(STRING_LITERAL);
+                break;
+            case CONSTANT_HEX:
+                casaToken(CONSTANT_HEX);
+                break;
+            default:
+                casaToken(CONSTANT);
+                break;
+
         }
 
     }
-
-        //casaToken(INT);
-
-        //casaToken(ATTRIBUTION);
-        //casaToken(CONSTANT);
-        //casaToken(SEMICOLON);
 
 }
