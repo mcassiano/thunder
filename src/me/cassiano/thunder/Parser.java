@@ -103,9 +103,11 @@ public class Parser {
     }
 
     public void start() throws IOException {
+        // colocar ambos na repeticao
         declaration();
         casaToken(SEMICOLON);
         commands();
+        casaToken(SEMICOLON);
     }
 
     public void imprimeToken(Token token) {
@@ -153,6 +155,15 @@ public class Parser {
 
     public void commands() throws IOException {
         System.out.println("tô em commands");
+
+        casaToken(ID);
+        casaToken(ATTRIBUTION);
+
+        exp_product();
+
+        //exp_value();
+
+        //expression();
     }
 
     public void logic_operators () throws IOException {
@@ -180,8 +191,11 @@ public class Parser {
                 break;*/
         }
     }
-
+/*
     public void expression() throws IOException {
+
+        exp_sum();
+
         if (currentToken.getToken() == LESS_THAN ||
                 currentToken.getToken() == GREATER_THAN ||
                 currentToken.getToken() == LESS_THAN_EQUALS ||
@@ -197,7 +211,9 @@ public class Parser {
             System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
         }
     }
+   */
 
+    /*
     public void exp_sum() throws IOException {
         if (currentToken.getToken() == PLUS)
             casaToken(PLUS);
@@ -217,8 +233,49 @@ public class Parser {
             exp_product();
         }
     }
+    */
 
-    public void exp_product() {
+    public void exp_product() throws IOException {
+        exp_value();
+        while ( currentToken.getToken() == ASTERISK ||
+                currentToken.getToken() == FORWARD_SLASH ||
+                currentToken.getToken() == AND)
+        {
+            switch (currentToken.getToken()){
+                case ASTERISK:
+                    casaToken(ASTERISK);
+                    break;
+                /*case FORWARD_SLASH:
+                    casaToken(FORWARD_SLASH);
+                    break;*/
+                default:
+                    casaToken(AND);
+                    break;
+            }
+
+            exp_value();
+        }
+    }
+
+
+    public void exp_value() throws IOException {
+        switch (currentToken.getToken()){
+            /*case LEFT_PARENTHESIS:
+                casaToken(LEFT_PARENTHESIS);
+                expression();
+                casaToken(RIGHT_PARENTHESIS);
+                break;*/
+            case ID:
+                casaToken(ID);
+                break;
+            default:
+                casaToken(CONSTANT);
+                break;
+            case NOT:
+                casaToken(NOT);
+                exp_value();
+                break;
+        }
 
     }
 
