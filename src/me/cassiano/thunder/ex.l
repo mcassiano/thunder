@@ -9,7 +9,7 @@ final MAXITER<-10;
 
 write("Digite seu nome: ");
 readln(nome);
-naoTerminou<-true;
+naoTerminou1<-true;
 n<-0;
 while (naoTerminou) begin
   writeln("Ola' ",nome);

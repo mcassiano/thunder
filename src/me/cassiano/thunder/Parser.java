@@ -172,6 +172,10 @@ public class Parser {
 
         switch (currentToken.getToken()) {
             case ID:
+
+                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
+                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+
                 casaToken(ID);
                 casaToken(ATTRIBUTION);
                 expression();
