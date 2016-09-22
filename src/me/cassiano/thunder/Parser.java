@@ -78,7 +78,7 @@ public class Parser {
         this.fileStream = fileStream;
     }
 
-    public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken {
+    public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException {
 
         if (currentToken.getToken().equals(tokenrecebido)) {
 
@@ -95,7 +95,7 @@ public class Parser {
             throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
     }
 
-    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
 
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
 
@@ -109,7 +109,7 @@ public class Parser {
     }
 
 
-    public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
         if (currentToken.getToken() == FINAL) {
             casaToken(FINAL);
 
@@ -165,7 +165,7 @@ public class Parser {
         return true;
     }
 
-    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
 
         switch (currentToken.getToken()) {
             case ID:
@@ -267,7 +267,7 @@ public class Parser {
         }
     }
 
-    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken {
+    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException {
         switch (currentToken.getToken()) {
             case LESS_THAN:
                 casaToken(LESS_THAN);
@@ -290,7 +290,7 @@ public class Parser {
         }
     }
 
-    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
 
         exp_sum();
 
@@ -307,7 +307,7 @@ public class Parser {
         }
     }
 
-    public void exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
 
         if (currentToken.getToken() == PLUS)
             casaToken(PLUS);
@@ -336,7 +336,7 @@ public class Parser {
         }
     }
 
-    public void exp_product() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void exp_product() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
         exp_value();
         while (currentToken.getToken() == ASTERISK ||
                 currentToken.getToken() == FORWARD_SLASH ||
@@ -357,7 +357,7 @@ public class Parser {
         }
     }
 
-    public void exp_value() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+    public void exp_value() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
         switch (currentToken.getToken()) {
             case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
