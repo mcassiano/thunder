@@ -35,9 +35,7 @@ import static me.cassiano.thunder.Token.*;
 
 public class Parser {
 
-    //private LexicalAnalyzer lexAn;
     private Symbol currentToken;
-    //private String lexema;
     private PushbackInputStream fileStream;
     public static long linenumber;
 
@@ -62,16 +60,20 @@ public class Parser {
     }
 
     public void start() throws IOException {
-        declaration();
-        casaToken(SEMICOLON);
-        commands();
+        while (declaration()) {
+            casaToken(SEMICOLON);
+        }
+
+        while (fileStream.available() != 0) {
+            commands();
+        }
     }
 
     public void imprimeToken(Token token) {
         System.out.println(token.toString());
     }
 
-    public void declaration() throws IOException {
+    public boolean declaration() throws IOException {
         if (currentToken.getToken() == FINAL){
             casaToken(FINAL);
             casaToken(ID);
@@ -88,9 +90,11 @@ public class Parser {
                 case STRING:
                     casaToken(STRING);
                     break;
-                default:
+                case BYTE:
                     casaToken(BYTE);
                     break;
+                default:
+                    return false;
             }
             casaToken(ID);
 
@@ -109,6 +113,7 @@ public class Parser {
                 }
             }
         }
+        return true;
     }
 
     public void commands() throws IOException {
