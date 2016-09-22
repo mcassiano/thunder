@@ -2,7 +2,7 @@
 compiler wrote for the l language, a fictional language described in our compilers class @ puc minas
 
 Commands to compile on windows
-Do this in the root project folder:
+ in the root project folder type:
 
 dir /s /B *.java > sources.txt
 
