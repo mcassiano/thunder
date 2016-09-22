@@ -33,26 +33,6 @@ import static me.cassiano.thunder.Token.*;
 
 /* Classe Responsável pela Análise Sintática */
 
-/*
-* START → {[DECLARATION];}+ {[COMMAND];}+
-*
-* DECLARATION → (final | int | boolean | string)id[<- const]{id[<- const]}*
-*
-* COMMAND →	id <- EXPRESSION |
-* while (EXPRESSION) (COMMAND |  begin {COMMAND;}* endwhile) |
-* if (EXPRESSION) (COMMAND |  begin {COMMAND;}* endif) [else (COMMAND |  begin {COMMAND;}* endelse)] |
-* readln (id) |
-* write (EXPRESSION {, EXPRESSION}*) |
-* writeln (EXPRESSION {, EXPRESSION}*)
-*
-* LOGIC_COMPARATION → (>|<|<=|>=|!=|==)
-*
-* EXPRESSION → Exp_SUM [LOGIC_COMPARATION Exp_SUM]
-* Exp_SUM → [+|-] Exp_PRODUCT {(+|-|OR) Exp_PRODUCT}*
-* Exp_PRODUCT → Exp_VALUE {(*|/|AND) Exp_VALUE}*
-* Exp_VALUE → "(" EXPRESSION ")" | id | const | NOT Exp_VALUE
-* */
-
 public class Parser {
 
     //private LexicalAnalyzer lexAn;
@@ -75,27 +55,6 @@ public class Parser {
             System.out.println("ERRO - EOF");
         else
             System.out.println("ERRO - lex  '"+currentToken.getLexeme()+"' nao esperado");
-
-        /*
-        * se tokenAtual = tokenRecebido
-        *   chama Analisador Léxico
-        * senão ERRO
-        *
-        * if(tokenRecebido != (byte)registro.getNumToken())
-		{
-			if(registro.getNumToken()==(byte)65535)
-			{
-				System.out.println(registro.getCont()+":fim de arquivo não esperado.");
-				System.exit(0);
-			}
-			System.out.println(registro.getCont()+":token não esperado.");
-			System.exit(0);
-
-		}else{
-			registro = anLex.automato(registro.getMarcado(), registro.getC());
-		}
-        *
-        * */
     }
 
     public void run(PushbackInputStream fileStream) throws IOException {
@@ -129,13 +88,6 @@ public class Parser {
             default:
                 casaToken(STRING);
                 break;
-            /*
-            case STRING:
-                casaToken(STRING);
-                break;
-            default:
-                System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
-                break;*/
         }
 
         casaToken(ID);
@@ -158,12 +110,6 @@ public class Parser {
     }
 
     public void commands() throws IOException {
-
-        System.out.println("\ttô em commands");
-
-        /*casaToken(ID);
-        casaToken(ATTRIBUTION);
-        expression();*/
 
         switch (currentToken.getToken()) {
             case ID:
@@ -206,31 +152,9 @@ public class Parser {
 
                 casaToken(RIGHT_PARENTHESIS);
                 break;
-
-            case WHILE:
-                casaToken(WHILE);
-                casaToken(LEFT_PARENTHESIS);
-
-                expression();
-
-                casaToken(RIGHT_PARENTHESIS);
-
-                if (currentToken.getToken() == BEGIN) {
-                    casaToken(BEGIN);
-
-                    while (currentToken.getToken() != END_WHILE) {
-                        commands();
-                        casaToken(SEMICOLON);
-                    }
-                    casaToken(END_WHILE);
-                } else commands();
-
-                break;
-        }
     }
 
     public void command_end() throws IOException {
-
 
         casaToken(WHILE);
         casaToken(LEFT_PARENTHESIS);
@@ -248,6 +172,27 @@ public class Parser {
             }
             casaToken(END_WHILE);
         } else commands();
+
+        case WHILE:
+        casaToken(WHILE);
+        casaToken(LEFT_PARENTHESIS);
+
+        expression();
+
+        casaToken(RIGHT_PARENTHESIS);
+
+        if (currentToken.getToken() == BEGIN) {
+            casaToken(BEGIN);
+
+            while (currentToken.getToken() != END_WHILE) {
+                commands();
+                casaToken(SEMICOLON);
+            }
+            casaToken(END_WHILE);
+        } else commands();
+
+        break;
+    }
 
     }
 
@@ -271,12 +216,6 @@ public class Parser {
             default:
                 casaToken(EQUALS);
                 break;
-            /*case EQUALS:
-                casaToken(EQUALS);
-                break;
-            default:
-                System.out.println("ERRO - lex  '" + currentToken.getLexeme() + "' nao esperado");// FAZER EXCEPTION
-                break;*/
         }
     }
 
