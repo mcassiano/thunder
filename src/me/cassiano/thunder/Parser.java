@@ -66,7 +66,6 @@ public class Parser {
         declaration();
         casaToken(SEMICOLON);
         commands();
-        casaToken(SEMICOLON);
     }
 
     public void imprimeToken(Token token) {
@@ -116,6 +115,7 @@ public class Parser {
                 casaToken(ID);
                 casaToken(ATTRIBUTION);
                 expression();
+                casaToken(SEMICOLON);
                 break;
 
             case READ_LINE:
@@ -123,77 +123,49 @@ public class Parser {
                 casaToken(LEFT_PARENTHESIS);
                 casaToken(ID);
                 casaToken(RIGHT_PARENTHESIS);
+                casaToken(SEMICOLON);
                 break;
 
             case WRITE:
-                casaToken(WRITE);
-                casaToken(LEFT_PARENTHESIS);
-
-                expression();
-
-                while (currentToken.getToken()==COMMA) {
-                    casaToken(COMMA);
-                    expression();
-                }
-
-                casaToken(RIGHT_PARENTHESIS);
-                break;
-
             case WRITE_LINE:
-                casaToken(WRITE_LINE);
+
+                if (currentToken.getToken() == WRITE) {
+                    casaToken(WRITE);
+                } else casaToken(WRITE_LINE);
+
                 casaToken(LEFT_PARENTHESIS);
 
                 expression();
 
-                while (currentToken.getToken()==COMMA) {
+                while (currentToken.getToken() == COMMA) {
                     casaToken(COMMA);
                     expression();
                 }
 
                 casaToken(RIGHT_PARENTHESIS);
+                casaToken(SEMICOLON);
                 break;
-    }
 
-    public void command_end() throws IOException {
+            case WHILE:
+                casaToken(WHILE);
+                casaToken(LEFT_PARENTHESIS);
+                expression();
+                casaToken(RIGHT_PARENTHESIS);
 
-        casaToken(WHILE);
-        casaToken(LEFT_PARENTHESIS);
+                if (currentToken.getToken() == BEGIN) {
+                    casaToken(BEGIN);
 
-        expression();
-
-        casaToken(RIGHT_PARENTHESIS);
-
-        if (currentToken.getToken() == BEGIN) {
-            casaToken(BEGIN);
-
-            while (currentToken.getToken() != END_WHILE) {
-                commands();
-                casaToken(SEMICOLON);
-            }
-            casaToken(END_WHILE);
-        } else commands();
-
-        case WHILE:
-        casaToken(WHILE);
-        casaToken(LEFT_PARENTHESIS);
-
-        expression();
-
-        casaToken(RIGHT_PARENTHESIS);
-
-        if (currentToken.getToken() == BEGIN) {
-            casaToken(BEGIN);
-
-            while (currentToken.getToken() != END_WHILE) {
-                commands();
-                casaToken(SEMICOLON);
-            }
-            casaToken(END_WHILE);
-        } else commands();
-
-        break;
-    }
-
+                    while (currentToken.getToken() != END_WHILE) {
+                        commands();
+                        casaToken(SEMICOLON);
+                    }
+                    casaToken(END_WHILE);
+                } else {
+                    commands();
+                    casaToken(SEMICOLON);
+                }
+                break;
+        }
     }
 
     public void logic_operators () throws IOException {
