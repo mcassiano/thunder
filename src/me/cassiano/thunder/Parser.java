@@ -207,7 +207,7 @@ public class Parser {
                 casaToken(RIGHT_PARENTHESIS);
                 break;
 
-            /*case WHILE:
+            case WHILE:
                 casaToken(WHILE);
                 casaToken(LEFT_PARENTHESIS);
 
@@ -218,16 +218,37 @@ public class Parser {
                 if (currentToken.getToken() == BEGIN) {
                     casaToken(BEGIN);
 
-                    while (currentToken.getToken()==COMMA) {
-                        casaToken(COMMA);
-                        expression();
+                    while (currentToken.getToken() != END_WHILE) {
+                        commands();
+                        casaToken(SEMICOLON);
                     }
-
-
+                    casaToken(END_WHILE);
                 } else commands();
 
-                break;*/
+                break;
         }
+    }
+
+    public void command_end() throws IOException {
+
+
+        casaToken(WHILE);
+        casaToken(LEFT_PARENTHESIS);
+
+        expression();
+
+        casaToken(RIGHT_PARENTHESIS);
+
+        if (currentToken.getToken() == BEGIN) {
+            casaToken(BEGIN);
+
+            while (currentToken.getToken() != END_WHILE) {
+                commands();
+                casaToken(SEMICOLON);
+            }
+            casaToken(END_WHILE);
+        } else commands();
+
     }
 
     public void logic_operators () throws IOException {
