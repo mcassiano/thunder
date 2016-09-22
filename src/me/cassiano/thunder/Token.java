@@ -66,7 +66,7 @@ public enum Token {
     FALSE("false"),
     //APOSTROPHE("'"),
     BOOLEAN("boolean"),
-    EOF("eof"), // NAO EXISTE NA TABELA
+    EOF(""), // NAO EXISTE NA TABELA
     UNDERSCORE("_"),
     STRING_LITERAL("[0-9A-Za-z]"),
     CONSTANT("[0-9]"),

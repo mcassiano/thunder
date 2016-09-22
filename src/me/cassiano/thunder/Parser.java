@@ -3,32 +3,68 @@
  * Pontifícia Universidade Católica de Minas Gerais
  * Curso de Ciência da Computação
  * Disciplina: Compiladores (2-2016)
- *
+ * <p>
  * Trabalho Prático
  * Thunder - Compiler for the fictional Language 'L'
- *
+ * <p>
  * Parte 1 - Analisador Léxico e Analisador Sintático
- *
+ * <p>
  * Objetivo:
  * Construção de um compilador que traduza programas na linguagem fonte "L"
  * para um subconjunto do ASSEMBLY da família 80x86.
- *
  *
  * @author Ana Cristina Pereira Teixeira    Matrícula: 427385
  * @author Mateus Loures do Nascimento      Matricula: 511709
  * @author Matheus Cassiano Cândido         Matricula: 454481
  * @version 0.1 11/09/2016
  * @version 0.2 19/09/2016
- *
  */
 
 package me.cassiano.thunder;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 
-import static me.cassiano.thunder.Token.*;
+import static me.cassiano.thunder.Token.AND;
+import static me.cassiano.thunder.Token.ASTERISK;
+import static me.cassiano.thunder.Token.ATTRIBUTION;
+import static me.cassiano.thunder.Token.BEGIN;
+import static me.cassiano.thunder.Token.BOOLEAN;
+import static me.cassiano.thunder.Token.BYTE;
+import static me.cassiano.thunder.Token.COMMA;
+import static me.cassiano.thunder.Token.CONSTANT;
+import static me.cassiano.thunder.Token.CONSTANT_HEX;
+import static me.cassiano.thunder.Token.ELSE;
+import static me.cassiano.thunder.Token.END_ELSE;
+import static me.cassiano.thunder.Token.END_IF;
+import static me.cassiano.thunder.Token.END_WHILE;
+import static me.cassiano.thunder.Token.EOF;
+import static me.cassiano.thunder.Token.EQUALS;
+import static me.cassiano.thunder.Token.FALSE;
+import static me.cassiano.thunder.Token.FINAL;
+import static me.cassiano.thunder.Token.FORWARD_SLASH;
+import static me.cassiano.thunder.Token.GREATER_THAN;
+import static me.cassiano.thunder.Token.GREATER_THAN_EQUALS;
+import static me.cassiano.thunder.Token.ID;
+import static me.cassiano.thunder.Token.IF;
+import static me.cassiano.thunder.Token.INT;
+import static me.cassiano.thunder.Token.LEFT_PARENTHESIS;
+import static me.cassiano.thunder.Token.LESS_THAN;
+import static me.cassiano.thunder.Token.LESS_THAN_EQUALS;
+import static me.cassiano.thunder.Token.MINUS;
+import static me.cassiano.thunder.Token.NOT;
+import static me.cassiano.thunder.Token.NOT_EQUALS;
+import static me.cassiano.thunder.Token.OR;
+import static me.cassiano.thunder.Token.PLUS;
+import static me.cassiano.thunder.Token.READ_LINE;
+import static me.cassiano.thunder.Token.RIGHT_PARENTHESIS;
+import static me.cassiano.thunder.Token.SEMICOLON;
+import static me.cassiano.thunder.Token.STRING;
+import static me.cassiano.thunder.Token.STRING_LITERAL;
+import static me.cassiano.thunder.Token.TRUE;
+import static me.cassiano.thunder.Token.WHILE;
+import static me.cassiano.thunder.Token.WRITE;
+import static me.cassiano.thunder.Token.WRITE_LINE;
 
 
 /* Classe Responsável pela Análise Sintática */
@@ -37,29 +73,34 @@ public class Parser {
 
     private Symbol currentToken;
     private PushbackInputStream fileStream;
-    public static long linenumber;
 
     public Parser(PushbackInputStream fileStream) throws IOException {
-        this.fileStream=fileStream;
-        this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
+        this.fileStream = fileStream;
     }
 
-    public void casaToken (Token tokenrecebido) throws IOException {
+    public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken {
 
-        if(currentToken.getToken().equals(tokenrecebido)){
-            System.out.println("lexema: "+currentToken.getLexeme()+" token: "+currentToken.getToken().name());
+        if (currentToken.getToken().equals(tokenrecebido)) {
+
+            String messageFormat = "Token: %s, Lexeme: %s";
+            String message = String.format(messageFormat, currentToken.getToken().name(),
+                    currentToken.getLexeme());
+
+            System.out.println(message);
+
             currentToken = LexicalAnalyzer.get().analyze(fileStream);
-        }else if (currentToken.getToken().equals(Token.EOF))
-            System.out.println("ERRO - EOF");
+        }
+
+        else if (currentToken.getToken() == EOF)
+            throw new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
         else
-            System.out.println("ERRO - lex  '"+currentToken.getLexeme()+"' nao esperado");
+            throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
     }
 
-    public void run(PushbackInputStream fileStream) throws IOException {
-        this.currentToken = LexicalAnalyzer.get().analyze(fileStream);
-    }
+    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
 
-    public void start() throws IOException {
+        this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
+
         while (declaration()) {
             casaToken(SEMICOLON);
         }
@@ -69,16 +110,18 @@ public class Parser {
         }
     }
 
-    public void imprimeToken(Token token) {
-        System.out.println(token.toString());
-    }
 
-    public boolean declaration() throws IOException {
-        if (currentToken.getToken() == FINAL){
+    public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+        if (currentToken.getToken() == FINAL) {
             casaToken(FINAL);
+
+            if (currentToken.getToken() == ID)
+                SymbolTable.get().putSymbol(currentToken);
+
             casaToken(ID);
             casaToken(ATTRIBUTION);
             expression();
+
         } else {
             switch (currentToken.getToken()) {
                 case INT:
@@ -96,6 +139,10 @@ public class Parser {
                 default:
                     return false;
             }
+
+            if (currentToken.getToken() == ID)
+                SymbolTable.get().putSymbol(currentToken);
+
             casaToken(ID);
 
             if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
@@ -105,18 +152,23 @@ public class Parser {
 
             while (currentToken.getToken().equals(Token.COMMA)) {
                 casaToken(COMMA);
+
+                if (currentToken.getToken() == ID)
+                    SymbolTable.get().putSymbol(currentToken);
+
                 casaToken(ID);
 
                 if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
                     casaToken(ATTRIBUTION);
                     casaToken(CONSTANT);
+                    SymbolTable.get().putSymbol(currentToken);
                 }
             }
         }
         return true;
     }
 
-    public void commands() throws IOException {
+    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
 
         switch (currentToken.getToken()) {
             case ID:
@@ -203,10 +255,18 @@ public class Parser {
                         commands();
                     }
                 }
+
+                break;
+
+                default:
+                    if (currentToken.getToken() == EOF)
+                        throw  new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
+
+                    throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
         }
     }
 
-    public void logic_operators () throws IOException {
+    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken {
         switch (currentToken.getToken()) {
             case LESS_THAN:
                 casaToken(LESS_THAN);
@@ -229,7 +289,7 @@ public class Parser {
         }
     }
 
-    public void expression() throws IOException {
+    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
 
         exp_sum();
 
@@ -238,8 +298,7 @@ public class Parser {
                 currentToken.getToken() == LESS_THAN_EQUALS ||
                 currentToken.getToken() == GREATER_THAN_EQUALS ||
                 currentToken.getToken() == NOT_EQUALS ||
-                currentToken.getToken() == EQUALS)
-        {
+                currentToken.getToken() == EQUALS) {
             logic_operators(); // casa token está dentro desse metodo
 
             exp_sum();
@@ -247,7 +306,7 @@ public class Parser {
         }
     }
 
-    public void exp_sum() throws IOException {
+    public void exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
 
         if (currentToken.getToken() == PLUS)
             casaToken(PLUS);
@@ -256,10 +315,9 @@ public class Parser {
 
         exp_product();
 
-        while ( currentToken.getToken() == PLUS ||
+        while (currentToken.getToken() == PLUS ||
                 currentToken.getToken() == MINUS ||
-                currentToken.getToken() == OR )
-        {
+                currentToken.getToken() == OR) {
 
             switch (currentToken.getToken()) {
                 case PLUS:
@@ -277,13 +335,12 @@ public class Parser {
         }
     }
 
-    public void exp_product() throws IOException {
+    public void exp_product() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
         exp_value();
-        while ( currentToken.getToken() == ASTERISK ||
+        while (currentToken.getToken() == ASTERISK ||
                 currentToken.getToken() == FORWARD_SLASH ||
-                currentToken.getToken() == AND)
-        {
-            switch (currentToken.getToken()){
+                currentToken.getToken() == AND) {
+            switch (currentToken.getToken()) {
                 case ASTERISK:
                     casaToken(ASTERISK);
                     break;
@@ -299,14 +356,16 @@ public class Parser {
         }
     }
 
-    public void exp_value() throws IOException {
-        switch (currentToken.getToken()){
+    public void exp_value() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme {
+        switch (currentToken.getToken()) {
             case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
                 expression();
                 casaToken(RIGHT_PARENTHESIS);
                 break;
             case ID:
+                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
+                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
                 casaToken(ID);
                 break;
             case NOT:
@@ -318,6 +377,12 @@ public class Parser {
                 break;
             case CONSTANT_HEX:
                 casaToken(CONSTANT_HEX);
+                break;
+            case TRUE:
+                casaToken(TRUE);
+                break;
+            case FALSE:
+                casaToken(FALSE);
                 break;
             default:
                 casaToken(CONSTANT);
