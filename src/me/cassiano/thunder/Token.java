@@ -29,7 +29,7 @@ package me.cassiano.thunder;
 public enum Token {
 
 
-    ID("[A-Za-z_][A-Za-z_0-9]*"),
+    ID(""), // [A-Za-z_][A-Za-z_0-9]*
     FINAL("final"),
     INT("int"),
     BYTE("byte"),
@@ -68,9 +68,9 @@ public enum Token {
     BOOLEAN("boolean"),
     EOF(""), // NAO EXISTE NA TABELA
     UNDERSCORE("_"),
-    STRING_LITERAL("[0-9A-Za-z]"),
-    CONSTANT("[0-9]"),
-    CONSTANT_HEX("[0-9A-F]");
+    STRING_LITERAL(""), // [0-9A-Za-z]
+    CONSTANT(""), // [0-9]
+    CONSTANT_HEX(""); // [0-9A-F]
 
 
     private final String text;

@@ -89,9 +89,7 @@ public class Parser {
             System.out.println(message);
 
             currentToken = LexicalAnalyzer.get().analyze(fileStream);
-        }
-
-        else if (currentToken.getToken() == EOF)
+        } else if (currentToken.getToken() == EOF)
             throw new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
         else
             throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
@@ -115,8 +113,8 @@ public class Parser {
         if (currentToken.getToken() == FINAL) {
             casaToken(FINAL);
 
-            if (currentToken.getToken() == ID)
-                SymbolTable.get().putSymbol(currentToken);
+//            if (currentToken.getToken() == ID)
+//                SymbolTable.get().putSymbol(currentToken);
 
             casaToken(ID);
             casaToken(ATTRIBUTION);
@@ -140,8 +138,8 @@ public class Parser {
                     return false;
             }
 
-            if (currentToken.getToken() == ID)
-                SymbolTable.get().putSymbol(currentToken);
+//            if (currentToken.getToken() == ID)
+//                SymbolTable.get().putSymbol(currentToken);
 
             casaToken(ID);
 
@@ -153,15 +151,14 @@ public class Parser {
             while (currentToken.getToken().equals(Token.COMMA)) {
                 casaToken(COMMA);
 
-                if (currentToken.getToken() == ID)
-                    SymbolTable.get().putSymbol(currentToken);
+//                if (currentToken.getToken() == ID)
+//                    SymbolTable.get().putSymbol(currentToken);
 
                 casaToken(ID);
 
                 if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
                     casaToken(ATTRIBUTION);
                     casaToken(CONSTANT);
-                    SymbolTable.get().putSymbol(currentToken);
                 }
             }
         }
@@ -173,8 +170,8 @@ public class Parser {
         switch (currentToken.getToken()) {
             case ID:
 
-                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
-                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+//                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
+//                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
 
                 casaToken(ID);
                 casaToken(ATTRIBUTION);
@@ -262,11 +259,11 @@ public class Parser {
 
                 break;
 
-                default:
-                    if (currentToken.getToken() == EOF)
-                        throw  new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
+            default:
+                if (currentToken.getToken() == EOF)
+                    throw new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
 
-                    throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
+                throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
         }
     }
 
@@ -368,8 +365,8 @@ public class Parser {
                 casaToken(RIGHT_PARENTHESIS);
                 break;
             case ID:
-                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
-                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+//                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
+//                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
                 casaToken(ID);
                 break;
             case NOT:

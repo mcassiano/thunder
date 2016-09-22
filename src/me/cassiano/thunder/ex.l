@@ -7,6 +7,8 @@ final MAXITER<-10;
 
 /* Programa Principal */
 
+abbcbc <- 1;
+
 write("Digite seu nome: ");
 readln(nome);
 naoTerminou1<-true;
