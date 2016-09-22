@@ -64,9 +64,8 @@ public enum Token {
     WRITE_LINE("writeln"),
     TRUE("true"),
     FALSE("false"),
-    //APOSTROPHE("'"),
     BOOLEAN("boolean"),
-    EOF(""), // NAO EXISTE NA TABELA
+    EOF(""),
     UNDERSCORE("_"),
     STRING_LITERAL(""), // [0-9A-Za-z]
     CONSTANT(""), // [0-9]

@@ -26,7 +26,7 @@ package me.cassiano.thunder;
 import java.io.IOException;
 import java.io.PushbackInputStream;
 import java.util.regex.Pattern;
-//import sun.jvm.hotspot.debugger.cdbg.Sym;
+
 
 /* Classe responsável pela Análise Léxica */
 
