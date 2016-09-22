@@ -1,17 +1,21 @@
-/* inicio do arquivo */
+/* Exemplo de Programa na linguagem L */
 
-()
+int n;
+string nome;
+boolean naoTerminou;
+final MAXITER<-10;
 
-||
+/* Programa Principal */
 
-&&
+abbcbc <- 1;
 
-<;
+write("Digite seu nome: ");
+readln(nome);
+naoTerminou1<-true;
+n<-0;
+while (naoTerminou) begin
+  writeln("Ola' ",nome);
+  n<-n+1;
+  naoTerminou<-n<MAXITER;
+endwhile
 
-<-
-
-<=
-
-matheus_;
-
-m a t h e u ;
