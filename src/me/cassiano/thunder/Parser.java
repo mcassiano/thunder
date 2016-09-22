@@ -62,7 +62,6 @@ public class Parser {
     }
 
     public void start() throws IOException {
-        // colocar ambos na repeticao
         declaration();
         casaToken(SEMICOLON);
         commands();
@@ -73,31 +72,26 @@ public class Parser {
     }
 
     public void declaration() throws IOException {
-
-        switch (currentToken.getToken()) {
-            case FINAL:
-                casaToken(FINAL);
-                break;
-            case INT:
-                casaToken(INT);
-                break;
-            case BOOLEAN:
-                casaToken(BOOLEAN);
-                break;
-            default:
-                casaToken(STRING);
-                break;
-        }
-
-        casaToken(ID);
-
-        if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
+        if (currentToken.getToken() == FINAL){
+            casaToken(FINAL);
+            casaToken(ID);
             casaToken(ATTRIBUTION);
-            casaToken(CONSTANT);
-        }
-
-        while (currentToken.getToken().equals(Token.COMMA)) {
-            casaToken(COMMA);
+            expression();
+        } else {
+            switch (currentToken.getToken()) {
+                case INT:
+                    casaToken(INT);
+                    break;
+                case BOOLEAN:
+                    casaToken(BOOLEAN);
+                    break;
+                case STRING:
+                    casaToken(STRING);
+                    break;
+                default:
+                    casaToken(BYTE);
+                    break;
+            }
             casaToken(ID);
 
             if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
@@ -105,6 +99,15 @@ public class Parser {
                 casaToken(CONSTANT);
             }
 
+            while (currentToken.getToken().equals(Token.COMMA)) {
+                casaToken(COMMA);
+                casaToken(ID);
+
+                if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
+                    casaToken(ATTRIBUTION);
+                    casaToken(CONSTANT);
+                }
+            }
         }
     }
 
@@ -157,14 +160,44 @@ public class Parser {
 
                     while (currentToken.getToken() != END_WHILE) {
                         commands();
-                        casaToken(SEMICOLON);
                     }
                     casaToken(END_WHILE);
                 } else {
                     commands();
-                    casaToken(SEMICOLON);
                 }
                 break;
+            case IF:
+                casaToken(IF);
+                casaToken(LEFT_PARENTHESIS);
+                expression();
+                casaToken(RIGHT_PARENTHESIS);
+
+                if (currentToken.getToken() == BEGIN) {
+                    casaToken(BEGIN);
+
+                    while (currentToken.getToken() != END_IF) {
+                        commands();
+                    }
+                    casaToken(END_IF);
+
+                } else {
+                    commands();
+                }
+
+                if (currentToken.getToken() == ELSE) {
+                    casaToken(ELSE);
+
+                    if (currentToken.getToken() == BEGIN) {
+                        casaToken(BEGIN);
+
+                        while (currentToken.getToken() != END_ELSE) {
+                            commands();
+                        }
+                        casaToken(END_ELSE);
+                    } else {
+                        commands();
+                    }
+                }
         }
     }
 
