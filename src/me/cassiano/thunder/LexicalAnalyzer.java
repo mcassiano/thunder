@@ -49,7 +49,7 @@ public class LexicalAnalyzer {
         return instance;
     }
 
-    public Symbol analyze(PushbackInputStream fileStream) throws IOException {
+    public Symbol analyze(PushbackInputStream fileStream) throws IOException, InvalidCharacterException {
 
         State state = State.Q_START;
         Symbol sym = null;
@@ -350,7 +350,7 @@ public class LexicalAnalyzer {
 
     }
 
-    private String readChar(PushbackInputStream fileStream) {
+    private String readChar(PushbackInputStream fileStream) throws InvalidCharacterException {
 
         int _char;
         String tChar;
@@ -366,6 +366,9 @@ public class LexicalAnalyzer {
             tChar = null;
         else
             tChar = String.valueOf((char) _char);
+
+        if (tChar != null && !isValid(tChar))
+            throw new InvalidCharacterException(lineNumber, tChar);
 
         return tChar;
     }
@@ -404,6 +407,16 @@ public class LexicalAnalyzer {
     private boolean isHex(String str) {
         String pattern = "[A-F0-9]";
         return Pattern.matches(pattern, str);
+    }
+
+    private boolean isValid(String str) {
+
+        String pattern = "[-\";',&:()\\[\\]\\{\\}+/!?><=*|]";
+        boolean special = Pattern.matches(pattern, str);
+
+        return special || isBlankChar(str) || isLetterDigitOrUnderscore(str) || isNewLine(str);
+
+
     }
 
     public int getLineNumber() {
