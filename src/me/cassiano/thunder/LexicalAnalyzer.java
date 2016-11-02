@@ -41,7 +41,7 @@ public class LexicalAnalyzer {
     private static final String AMPERSAND = "&";
     private static final String QUOTE = "\"";
 
-    private int lineNumber = 0;
+    private int lineNumber = 1;
 
     private static final LexicalAnalyzer instance = new LexicalAnalyzer();
 
@@ -49,7 +49,7 @@ public class LexicalAnalyzer {
         return instance;
     }
 
-    public Symbol analyze(PushbackInputStream fileStream) throws IOException {
+    public Symbol analyze(PushbackInputStream fileStream) throws IOException, UnexpectedEndOfFileException {
 
         State state = State.Q_START;
         Symbol sym = null;
@@ -59,15 +59,17 @@ public class LexicalAnalyzer {
 
             String currentChar = readChar(fileStream);
 
-            if (currentChar == null)
+            if (currentChar == null &&
+                    state != State.Q_START)
+                throw new UnexpectedEndOfFileException(lineNumber);
+
+            else if (currentChar == null)
                 return new Symbol(Token.EOF);
 
-            if (state == State.Q_START &&
-                    isBlankChar(currentChar))
-                continue;
+//            if (isBlankChar(currentChar))
+//                continue;
 
-            if (state == State.Q_START &&
-                    isNewLine(currentChar)) {
+            if (isNewLine(currentChar)) {
                 lineNumber += 1;
                 continue;
             }
@@ -94,7 +96,9 @@ public class LexicalAnalyzer {
                 case Q_2:
                     /* current state: Q2, if next char is not *, just keep looping here */
 
-                    if (Token.fromString(currentChar) != Token.ASTERISK)
+                    Token tok = Token.fromString(currentChar);
+
+                    if (tok != Token.ASTERISK)
                         state = State.Q_2;
                     else
                         state = State.Q_3;
@@ -372,15 +376,14 @@ public class LexicalAnalyzer {
 
     private boolean isBlankChar(String str) {
 
-        return str.isEmpty() ||
-                str.equals(TAB) ||
+        return str.equals(TAB) ||
                 str.equals(BLANK);
     }
 
     private boolean isNewLine(String str) {
 
-        return str.equals(NEW_LINE) ||
-                str.equals(NEW_LINE_WIN);
+        return str.isEmpty() ||
+                str.equals(NEW_LINE);
     }
 
     private boolean isLetterOrUnderscore(String str) {
