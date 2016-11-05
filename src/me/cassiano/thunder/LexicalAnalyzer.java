@@ -32,6 +32,12 @@ import java.util.regex.Pattern;
 
 public class LexicalAnalyzer {
 
+    public static final int MIN_BYTE = 0;
+    public static final int MAX_BYTE = 255;
+
+    public static final int MIN_INT = -32768;
+    public static final int MAX_INT = 32767;
+
     private static final String BLANK = " ";
     private static final String NEW_LINE = "\n";
     private static final String NEW_LINE_WIN = "\r";
@@ -40,17 +46,15 @@ public class LexicalAnalyzer {
     private static final String PIPE = "|";
     private static final String AMPERSAND = "&";
     private static final String QUOTE = "\"";
-
-    private int lineNumber = 1;
-
     private static final LexicalAnalyzer instance = new LexicalAnalyzer();
+    private int lineNumber = 1;
 
     public static LexicalAnalyzer get() {
         return instance;
     }
 
 
-    public Symbol analyze(PushbackInputStream fileStream) throws IOException, InvalidCharacterException, UnexpectedEndOfFileException {
+    public Symbol analyze(PushbackInputStream fileStream) throws IOException, InvalidCharacterException, UnexpectedEndOfFileException, UnknownLexeme, UnexpectedToken {
 
         State state = State.Q_START;
         Symbol sym = null;
@@ -60,28 +64,20 @@ public class LexicalAnalyzer {
 
             String currentChar = readChar(fileStream);
 
-            if (currentChar == null &&
-                    state != State.Q_START)
-                throw new UnexpectedEndOfFileException(lineNumber);
-
-            else if (currentChar == null)
-                return new Symbol(Token.EOF);
-
-//            if (isBlankChar(currentChar))
-//                continue;
-
-            if (isNewLine(currentChar)) {
-                lineNumber += 1;
-                continue;
-            }
 
             switch (state) {
 
                 case Q_START:
                     ProcessingResponse response = processQStart(currentChar);
-                    state = response.getStateResponse();
-                    lexeme += response.getLexeme();
-                    sym = response.getSymbol();
+
+                    if (response == null)
+                        state = State.Q_END;
+
+                    else {
+                        state = response.getStateResponse();
+                        lexeme += response.getLexeme();
+                        sym = response.getSymbol();
+                    }
                     break;
 
                 case Q_1:
@@ -178,13 +174,15 @@ public class LexicalAnalyzer {
                         lexeme += currentChar;
                         state = State.Q_8;
                     } else {
-                        fileStream.unread(currentChar.charAt(0));
+                        if (currentChar != null) fileStream.unread(currentChar.charAt(0));
 
                         /* is reserved word or symbol has been seen? */
                         if (SymbolTable.get().hasSymbol(lexeme))
                             sym = SymbolTable.get().getSymbol(lexeme);
-                        else
+                        else {
                             sym = new Symbol(Token.ID, lexeme);
+//                            SymbolTable.get().putSymbol(sym);
+                        }
 
                         state = State.Q_END;
                     }
@@ -194,13 +192,12 @@ public class LexicalAnalyzer {
                     /* current state: Q9, already read the first quote in String */
 
                     if (currentChar.equals(QUOTE)) { // FALTANDO estado de QUEBRA de linha
-                        lexeme += currentChar;
+//                        lexeme += currentChar;
                         state = State.Q_END;
-                        sym = new Symbol(Token.STRING_LITERAL, lexeme);
+                        sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.STRING);
                     } else {
                         lexeme += currentChar;
                         state = State.Q_10;
-
                     }
 
                     break;
@@ -212,8 +209,8 @@ public class LexicalAnalyzer {
                         lexeme += currentChar;
                         state = State.Q_10;
                     } else {
-                        lexeme += currentChar;
-                        sym = new Symbol(Token.STRING_LITERAL, lexeme);
+//                        lexeme += currentChar;
+                        sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.STRING);
                         state = State.Q_END;
                     }
 
@@ -244,24 +241,38 @@ public class LexicalAnalyzer {
                     if (isHex(currentChar)) {
                         lexeme += currentChar;
                         state = State.Q_13;
-                    }
+                    } else throw new UnknownLexeme(lineNumber, currentChar);
 
                     break;
 
                 case Q_13:
                     /* current state Q13, read the second HEX digit */
 
-                    if (isHex(currentChar)) {
-                        lexeme += currentChar;
+                    if (currentChar != null && !isHex(currentChar)) {
+                        fileStream.unread(currentChar.charAt(0));
                         state = State.Q_END;
-                        sym = new Symbol(Token.CONSTANT_HEX, lexeme);
 
+                        String hexValue = lexeme.substring(2);
+
+                        try {
+                            int parsedInt = Integer.parseInt(hexValue, 16);
+                            if (parsedInt >= MIN_BYTE && parsedInt <= MAX_BYTE)
+                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.BYTE);
+                            else throw new UnknownLexeme(lineNumber, lexeme);
+
+                        } catch (NumberFormatException e) {
+                            throw new UnknownLexeme(lineNumber, lexeme);
+                        }
+
+                    } else if (currentChar != null) {
+                        state = State.Q_13;
+                        lexeme += currentChar;
                     }
 
                     break;
 
                 case Q_14:
-                    /*current state Q14, read digit
+                    /* current state Q14, read digit
                     * otherwise just return the latest symbol */
 
                     if (isDigit(currentChar)) {
@@ -270,13 +281,33 @@ public class LexicalAnalyzer {
                     } else {
                         fileStream.unread(currentChar.charAt(0));
                         state = State.Q_END;
-                        sym = new Symbol(Token.CONSTANT, lexeme);
 
+                        try {
+                            int parsedInt = Integer.parseInt(lexeme);
+
+                            if (parsedInt >= MIN_BYTE && parsedInt <= MAX_BYTE) // byte
+                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.BYTE);
+
+                            else if (parsedInt >= MIN_INT && parsedInt <= MAX_INT) // integer
+                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.INTEGER);
+
+                        } catch (NumberFormatException e) {
+                            throw new UnknownLexeme(lineNumber, lexeme);
+                        }
+
+                        if (sym == null)
+                            throw new UnknownLexeme(lineNumber, lexeme);
                     }
 
                     break;
             }
 
+
+            if (isNewLine(currentChar))
+                lineNumber += 1;
+
+            if (currentChar == null && state != State.Q_END)
+                throw new UnexpectedEndOfFileException(lineNumber);
 
         }
 
@@ -284,6 +315,9 @@ public class LexicalAnalyzer {
     }
 
     private ProcessingResponse processQStart(String currentChar) {
+
+        if (currentChar == null)
+            return null;
 
         Token token = Token.fromString(currentChar);
         State state = State.Q_START;
@@ -301,7 +335,7 @@ public class LexicalAnalyzer {
                 lexeme += currentChar;
                 state = State.Q_8;
             } else if (currentChar.equals(QUOTE)) {
-                lexeme += currentChar;
+//                lexeme += currentChar;
                 state = State.Q_9;
             } else if (currentChar.equals("0")) {
                 lexeme += currentChar;
@@ -380,44 +414,44 @@ public class LexicalAnalyzer {
 
     private boolean isBlankChar(String str) {
 
-        return str.equals(TAB) ||
-                str.equals(BLANK);
+        return str != null && (str.equals(TAB) || str.equals(BLANK));
+
     }
 
     private boolean isNewLine(String str) {
 
-        return str.isEmpty() ||
-                str.equals(NEW_LINE);
+        return str != null && (str.isEmpty() ||
+                str.equals(NEW_LINE));
     }
 
     private boolean isLetterOrUnderscore(String str) {
 
         String pattern = "[A-Za-z_]";
-        return Pattern.matches(pattern, str);
+        return str != null && Pattern.matches(pattern, str);
 
     }
 
     private boolean isLetterDigitOrUnderscore(String str) {
 
         String pattern = "[A-Za-z0-9_]";
-        return Pattern.matches(pattern, str);
+        return str != null && Pattern.matches(pattern, str);
     }
 
     private boolean isDigit(String str) {
         String pattern = "[0-9]";
-        return Pattern.matches(pattern, str);
+        return str != null && Pattern.matches(pattern, str);
     }
 
     private boolean isHex(String str) {
         String pattern = "[A-F0-9]";
-        return Pattern.matches(pattern, str);
+        return str != null && Pattern.matches(pattern, str);
     }
 
     private boolean isValid(String str) {
 
         String pattern = "[-\";',&:()\\[\\]+/!?><=*|]";
-        boolean special = Pattern.matches(pattern, str);
-        boolean newLineWin = str.equals("\r");
+        boolean special = str != null && Pattern.matches(pattern, str);
+        boolean newLineWin = str != null && str.equals("\r");
 
         return newLineWin || special || isBlankChar(str) || isLetterDigitOrUnderscore(str) || isNewLine(str);
 

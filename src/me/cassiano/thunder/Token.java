@@ -3,23 +3,21 @@
  * Pontifícia Universidade Católica de Minas Gerais
  * Curso de Ciência da Computação
  * Disciplina: Compiladores (2-2016)
- *
+ * <p>
  * Trabalho Prático
  * Thunder - Compiler for the fictional Language 'L'
- *
+ * <p>
  * Parte 1 - Analisador Léxico e Analisador Sintático
- *
+ * <p>
  * Objetivo:
  * Construção de um compilador que traduza programas na linguagem fonte "L"
  * para um subconjunto do ASSEMBLY da família 80x86.
- *
  *
  * @author Ana Cristina Pereira Teixeira    Matrícula: 427385
  * @author Mateus Loures do Nascimento      Matricula: 511709
  * @author Matheus Cassiano Cândido         Matricula: 454481
  * @version 0.1 11/09/2016
  * @version 0.2 19/09/2016
- *
  */
 
 package me.cassiano.thunder;
@@ -67,10 +65,7 @@ public enum Token {
     BOOLEAN("boolean"),
     EOF(""),
     UNDERSCORE("_"),
-    STRING_LITERAL(""), // [0-9A-Za-z]
-    CONSTANT(""), // [0-9]
-    CONSTANT_HEX(""); // [0-9A-F]
-
+    CONSTANT(""); // [0-9]
 
     private final String text;
 
@@ -80,14 +75,6 @@ public enum Token {
      */
     Token(final String text) {
         this.text = text;
-    }
-
-    /* (non-Javadoc)
-     * @see java.lang.Enum#toString()
-     */
-    @Override
-    public String toString() {
-        return text;
     }
 
     public static Token fromString(String text) {
@@ -101,4 +88,12 @@ public enum Token {
         }
         return null;
     }
-}
+
+    /* (non-Javadoc)
+     * @see java.lang.Enum#toString()
+     */
+    @Override
+    public String toString() {
+        return text;
+    }
+    }
