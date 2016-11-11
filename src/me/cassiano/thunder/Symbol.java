@@ -22,7 +22,7 @@
 
 package me.cassiano.thunder;
 
-/* Classe Responsável pelo Armazenamento do Símbolo */
+/* Classe Responsável representar um símbolo */
 
 public class Symbol {
 
@@ -34,6 +34,13 @@ public class Symbol {
     public Symbol(Token token, String lexeme) {
         this.token = token;
         this.lexeme = lexeme;
+    }
+
+    public Symbol(Token token, String lexeme, SymbolType type) {
+        this.token = token;
+        this.lexeme = lexeme;
+        this.type = type;
+        this.class_ = null;
     }
 
     public Symbol(Token token) {

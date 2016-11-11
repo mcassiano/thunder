@@ -33,7 +33,6 @@ import static me.cassiano.thunder.Token.BOOLEAN;
 import static me.cassiano.thunder.Token.BYTE;
 import static me.cassiano.thunder.Token.COMMA;
 import static me.cassiano.thunder.Token.CONSTANT;
-import static me.cassiano.thunder.Token.CONSTANT_HEX;
 import static me.cassiano.thunder.Token.ELSE;
 import static me.cassiano.thunder.Token.END_ELSE;
 import static me.cassiano.thunder.Token.END_IF;
@@ -60,7 +59,6 @@ import static me.cassiano.thunder.Token.READ_LINE;
 import static me.cassiano.thunder.Token.RIGHT_PARENTHESIS;
 import static me.cassiano.thunder.Token.SEMICOLON;
 import static me.cassiano.thunder.Token.STRING;
-import static me.cassiano.thunder.Token.STRING_LITERAL;
 import static me.cassiano.thunder.Token.TRUE;
 import static me.cassiano.thunder.Token.WHILE;
 import static me.cassiano.thunder.Token.WRITE;
@@ -78,9 +76,10 @@ public class Parser {
         this.fileStream = fileStream;
     }
 
-    public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException {
+    public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
 
-        if (currentToken.getToken().equals(tokenrecebido)) {
+
+        if (currentToken != null && currentToken.getToken().equals(tokenrecebido)) {
 
             String messageFormat = "Token: %s, Lexeme: %s";
             String message = String.format(messageFormat, currentToken.getToken().name(),
@@ -89,7 +88,7 @@ public class Parser {
             System.out.println(message);
 
             currentToken = LexicalAnalyzer.get().analyze(fileStream);
-        } else if (currentToken.getToken() == EOF)
+        } else if (currentToken == null)
             throw new UnexpectedEndOfFileException(LexicalAnalyzer.get().getLineNumber());
         else
             throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
@@ -103,13 +102,18 @@ public class Parser {
             casaToken(SEMICOLON);
         }
 
-        while (fileStream.available() != 0) {
+        do {
             commands();
-        }
+        } while (fileStream.available() != 0);
+
     }
 
 
     public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+
+        if (currentToken == null)
+            return false;
+
         if (currentToken.getToken() == FINAL) {
             casaToken(FINAL);
 
@@ -166,6 +170,9 @@ public class Parser {
     }
 
     public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+
+        if (currentToken == null)
+            return;
 
         switch (currentToken.getToken()) {
             case ID:
@@ -267,7 +274,7 @@ public class Parser {
         }
     }
 
-    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException {
+    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
         switch (currentToken.getToken()) {
             case LESS_THAN:
                 casaToken(LESS_THAN);
@@ -294,6 +301,9 @@ public class Parser {
 
         exp_sum();
 
+        if (currentToken == null)
+            return;
+
         if (currentToken.getToken() == LESS_THAN ||
                 currentToken.getToken() == GREATER_THAN ||
                 currentToken.getToken() == LESS_THAN_EQUALS ||
@@ -308,6 +318,9 @@ public class Parser {
     }
 
     public void exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+
+        if (currentToken == null)
+            return;
 
         if (currentToken.getToken() == PLUS)
             casaToken(PLUS);
@@ -373,11 +386,8 @@ public class Parser {
                 casaToken(NOT);
                 exp_value();
                 break;
-            case STRING_LITERAL:
-                casaToken(STRING_LITERAL);
-                break;
-            case CONSTANT_HEX:
-                casaToken(CONSTANT_HEX);
+            case CONSTANT:
+                casaToken(CONSTANT);
                 break;
             case TRUE:
                 casaToken(TRUE);

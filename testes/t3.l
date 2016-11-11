@@ -5,7 +5,7 @@ string nome;
 boolean naoTerminou;
 final MAXITER<-10;
 
-/* Programa Principal */
+/* Programa Principal **/
 
 write("Digite seu nome: ");
 readln(nome);
