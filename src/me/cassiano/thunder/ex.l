@@ -5,7 +5,7 @@ string nome;
 boolean naoTerminou;
 final MAXITER<-10;
 
-/* Programa Principal */
+/* Programa Principal *
 
 abbcbc <- 1;
 
@@ -17,5 +17,6 @@ while (naoTerminou) begin
   writeln("Ola' ",nome);
   n<-n+1;
   naoTerminou<-n<MAXITER;
-endwhile
+endwhile */
 
+id <- 0xff\;
