@@ -95,3 +95,46 @@ class UnknownLexeme extends Exception {
         return message;
     }
 }
+
+class UnknownIdentifier extends Exception {
+
+    private String message;
+
+    UnknownIdentifier(int line, String lexeme) {
+        super();
+
+        String messageFormat = "Linha %d: Identificador (%s) não declarado.";
+        message = String.format(messageFormat, line, lexeme);
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+}
+
+class IncompatibleTypes extends Exception {
+
+    private String message;
+
+    IncompatibleTypes(int line, String expected, String actual) {
+        super();
+
+        String messageFormat = "Linha %d: Tipos incompatíveis. Esperado '%s', recebido '%s'.";
+        message = String.format(messageFormat, line, expected, actual);
+    }
+
+    IncompatibleTypes(int line, String type) {
+        super();
+
+        String messageFormat = "Linha %d: Tipo incompatível (%s).";
+        message = String.format(messageFormat, line, type);
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+}

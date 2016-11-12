@@ -300,6 +300,19 @@ public class LexicalAnalyzer {
                     }
 
                     break;
+
+                case Q_15:
+
+                    if (isDigit(currentChar)) {
+                        lexeme += currentChar;
+                        state = State.Q_14;
+                    } else {
+                        fileStream.unread(currentChar.charAt(0));
+                        state = State.Q_END;
+                    }
+
+                    break;
+
             }
 
 
@@ -356,7 +369,6 @@ public class LexicalAnalyzer {
                 case PLUS:
                 case ASTERISK:
                 case SEMICOLON:
-                case MINUS:
                     Symbol sym = new Symbol(token, currentChar);
                     state = State.Q_END;
                     return new ProcessingResponse(state, lexeme, sym);
@@ -379,6 +391,11 @@ public class LexicalAnalyzer {
                 case UNDERSCORE:
                     lexeme += currentChar;
                     state = State.Q_8;
+                    break;
+
+                case MINUS:
+                    lexeme += currentChar;
+                    state = State.Q_15;
                     break;
 
             }
@@ -483,6 +500,7 @@ public class LexicalAnalyzer {
         Q_12,
         Q_13,
         Q_14,
+        Q_15,
         Q_END
     }
 

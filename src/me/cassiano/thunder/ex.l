@@ -19,4 +19,4 @@ while (naoTerminou) begin
   naoTerminou<-n<MAXITER;
 endwhile */
 
-id <- 0xff\;
+x <- -100;

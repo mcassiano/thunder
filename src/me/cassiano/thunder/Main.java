@@ -63,7 +63,8 @@ public class Main {
         } catch (IOException e) {
             e.printStackTrace();
 
-        } catch (UnexpectedEndOfFileException | UnexpectedToken | UnknownLexeme | InvalidCharacterException e) {
+        } catch (UnexpectedEndOfFileException | UnexpectedToken | UnknownLexeme |
+                InvalidCharacterException | UnknownIdentifier | IncompatibleTypes e) {
             System.out.println(e.getMessage());
 
         }

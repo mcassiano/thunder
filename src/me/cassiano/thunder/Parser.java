@@ -94,7 +94,7 @@ public class Parser {
             throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
     }
 
-    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
 
@@ -109,7 +109,7 @@ public class Parser {
     }
 
 
-    public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public boolean declaration() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         if (currentToken == null)
             return false;
@@ -169,7 +169,7 @@ public class Parser {
         return true;
     }
 
-    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         if (currentToken == null)
             return;
@@ -297,7 +297,7 @@ public class Parser {
         }
     }
 
-    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         exp_sum();
 
@@ -317,17 +317,33 @@ public class Parser {
         }
     }
 
-    public void exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public SymbolType exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken,
+            UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         if (currentToken == null)
-            return;
+            return null;
 
-        if (currentToken.getToken() == PLUS)
+        Token sign = null;
+        Symbol symbol = currentToken;
+
+        if (currentToken.getToken() == PLUS) {
+            sign = currentToken.getToken();
             casaToken(PLUS);
-        else if (currentToken.getToken() == MINUS)
+        } else if (currentToken.getToken() == MINUS) {
+            sign = currentToken.getToken();
             casaToken(MINUS);
+        }
 
-        exp_product();
+        SymbolType mainType = exp_product();
+
+        if ((sign == PLUS || sign == MINUS) &&
+                (mainType == SymbolType.STRING || mainType == SymbolType.LOGICAL))
+            throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), mainType.toString());
+
+        else if (sign == MINUS
+                && symbol.getToken() == ID)
+            mainType = SymbolType.INTEGER;
+
 
         while (currentToken.getToken() == PLUS ||
                 currentToken.getToken() == MINUS ||
@@ -347,13 +363,21 @@ public class Parser {
 
             exp_product();
         }
+
+        return mainType;
     }
 
-    public void exp_product() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
-        exp_value();
+    public SymbolType exp_product() throws IOException, UnexpectedEndOfFileException,
+            UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+
+        SymbolType mainType = exp_value();
+
         while (currentToken.getToken() == ASTERISK ||
                 currentToken.getToken() == FORWARD_SLASH ||
                 currentToken.getToken() == AND) {
+
+            Token op = currentToken.getToken();
+
             switch (currentToken.getToken()) {
                 case ASTERISK:
                     casaToken(ASTERISK);
@@ -366,11 +390,31 @@ public class Parser {
                     break;
             }
 
-            exp_value();
+            SymbolType innerType = exp_value();
+
+            if (mainType == SymbolType.STRING || innerType == SymbolType.STRING)
+                throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
+                        mainType.toString(), innerType.toString());
+
+            else if (op == FORWARD_SLASH || op == ASTERISK)
+                mainType = SymbolType.INTEGER;
+
+            else if (op == AND) {
+
+                if (!(innerType == SymbolType.LOGICAL && mainType == SymbolType.LOGICAL))
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
+                            mainType.toString(), innerType.toString());
+            }
         }
+
+        return mainType;
     }
 
-    public void exp_value() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException {
+    public SymbolType exp_value() throws IOException, UnexpectedEndOfFileException,
+            UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+
+        SymbolType type = null;
+
         switch (currentToken.getToken()) {
             case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
@@ -378,29 +422,43 @@ public class Parser {
                 casaToken(RIGHT_PARENTHESIS);
                 break;
             case ID:
-//                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
-//                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+
+                if (currentToken.getClass_() == null)
+                    throw new UnknownIdentifier(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+                else type = currentToken.getType();
+
                 casaToken(ID);
                 break;
             case NOT:
                 casaToken(NOT);
-                exp_value();
+
+                SymbolType expType = exp_value();
+
+                if (expType != SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
+                            SymbolType.LOGICAL.toString(), expType.toString());
+
+                type = SymbolType.LOGICAL;
                 break;
             case CONSTANT:
+                type = currentToken.getType();
                 casaToken(CONSTANT);
                 break;
             case TRUE:
+                type = SymbolType.LOGICAL;
                 casaToken(TRUE);
                 break;
             case FALSE:
+                type = SymbolType.LOGICAL;
                 casaToken(FALSE);
                 break;
             default:
-                casaToken(CONSTANT);
-                break;
+                throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(),
+                        currentToken.getToken());
 
         }
 
+        return type;
     }
 
 }
