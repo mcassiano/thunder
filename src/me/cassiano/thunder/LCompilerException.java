@@ -121,7 +121,7 @@ class IncompatibleTypes extends Exception {
     IncompatibleTypes(int line, String expected, String actual) {
         super();
 
-        String messageFormat = "Linha %d: Tipos incompatíveis. Esperado '%s', recebido '%s'.";
+        String messageFormat = "Linha %d: Tipos incompatíveis ('%s' e '%s').";
         message = String.format(messageFormat, line, expected, actual);
     }
 

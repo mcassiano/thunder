@@ -297,12 +297,12 @@ public class Parser {
         }
     }
 
-    public void expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+    public SymbolType expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
-        exp_sum();
+        SymbolType expType = exp_sum();
 
         if (currentToken == null)
-            return;
+            return null;
 
         if (currentToken.getToken() == LESS_THAN ||
                 currentToken.getToken() == GREATER_THAN ||
@@ -310,11 +310,32 @@ public class Parser {
                 currentToken.getToken() == GREATER_THAN_EQUALS ||
                 currentToken.getToken() == NOT_EQUALS ||
                 currentToken.getToken() == EQUALS) {
+
+            if (expType == SymbolType.STRING &&
+                    !(currentToken.getToken() == NOT_EQUALS || currentToken.getToken() == EQUALS))
+                throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString());
+
+            else if (expType == SymbolType.LOGICAL &&
+                    !(currentToken.getToken() == NOT_EQUALS || currentToken.getToken() == EQUALS))
+                throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString());
+
             logic_operators(); // casa token está dentro desse metodo
 
-            exp_sum();
+
+            SymbolType tempType = exp_sum();
+
+            if (expType != tempType) {
+
+                if (!((expType == SymbolType.INTEGER && tempType == SymbolType.BYTE) ||
+                        (tempType == SymbolType.INTEGER && expType == SymbolType.BYTE)))
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString(), tempType.toString());
+            }
+
+            expType = SymbolType.LOGICAL;
 
         }
+
+        return expType;
     }
 
     public SymbolType exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken,
