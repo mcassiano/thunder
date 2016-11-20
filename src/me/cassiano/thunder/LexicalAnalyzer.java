@@ -177,11 +177,14 @@ public class LexicalAnalyzer {
                         if (currentChar != null) fileStream.unread(currentChar.charAt(0));
 
                         /* is reserved word or symbol has been seen? */
-                        if (SymbolTable.get().hasSymbol(lexeme))
+                        if (SymbolTable.get().hasSymbol(lexeme) && SymbolTable.get().getSymbol(lexeme).getClass_()==null) { //simbolo já existe na tabela
                             sym = SymbolTable.get().getSymbol(lexeme);
+                        }else if (SymbolTable.get().hasSymbol(lexeme) && SymbolTable.get().getSymbol(lexeme).getClass_()!=null){
+                            System.out.println("Simbolo  já existe "+lexeme.toString()); // criar exceção nn:identificador ja declarado [lex].
+                        }
                         else {
                             sym = new Symbol(Token.ID, lexeme);
-//                            SymbolTable.get().putSymbol(sym);
+                            SymbolTable.get().putSymbol(sym);
                         }
 
                         state = State.Q_END;

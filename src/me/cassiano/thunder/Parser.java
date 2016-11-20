@@ -118,6 +118,7 @@ public class Parser {
 
             casaToken(FINAL);
             Symbol tempID = currentToken;
+    //        SymbolTable.get().putSymbol(currentToken); OLHAR se está adicionando na tabela de simbolos pelo CASATOKEN
             casaToken(ID);
             casaToken(ATTRIBUTION);
             SymbolType tempType = expression();
@@ -126,25 +127,32 @@ public class Parser {
             tempID.setClass_(SymbolClass.CONST);
 
         } else {
+            SymbolType tempType;
             switch (currentToken.getToken()) {
                 case INT:
+                    tempType = currentToken.getType();
                     casaToken(INT);
                     break;
                 case BOOLEAN:
+                    tempType = currentToken.getType();
                     casaToken(BOOLEAN);
                     break;
                 case STRING:
+                    tempType = currentToken.getType();
                     casaToken(STRING);
                     break;
                 case BYTE:
+                    tempType = currentToken.getType();
                     casaToken(BYTE);
                     break;
                 default:
                     return false;
             }
 
-//            if (currentToken.getToken() == ID)
-//                SymbolTable.get().putSymbol(currentToken);
+
+            //verificar se tipo declarado eh compativel com atribuido
+//          if (currentToken.getToken() == ID)
+//              SymbolTable.get().putSymbol(currentToken);
 
             casaToken(ID);
 
