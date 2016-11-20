@@ -181,7 +181,7 @@ public class LexicalAnalyzer {
                             sym = SymbolTable.get().getSymbol(lexeme);
                         else {
                             sym = new Symbol(Token.ID, lexeme);
-//                            SymbolTable.get().putSymbol(sym);
+                            SymbolTable.get().putSymbol(sym);
                         }
 
                         state = State.Q_END;
@@ -194,7 +194,7 @@ public class LexicalAnalyzer {
                     if (currentChar.equals(QUOTE)) { // FALTANDO estado de QUEBRA de linha
 //                        lexeme += currentChar;
                         state = State.Q_END;
-                        sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.STRING);
+                        sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.STRING);
                     } else {
                         lexeme += currentChar;
                         state = State.Q_10;
@@ -210,7 +210,7 @@ public class LexicalAnalyzer {
                         state = State.Q_10;
                     } else {
 //                        lexeme += currentChar;
-                        sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.STRING);
+                        sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.STRING);
                         state = State.Q_END;
                     }
 
@@ -257,7 +257,7 @@ public class LexicalAnalyzer {
                         try {
                             int parsedInt = Integer.parseInt(hexValue, 16);
                             if (parsedInt >= MIN_BYTE && parsedInt <= MAX_BYTE)
-                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.BYTE);
+                                sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.BYTE);
                             else throw new UnknownLexeme(lineNumber, lexeme);
 
                         } catch (NumberFormatException e) {
@@ -286,10 +286,10 @@ public class LexicalAnalyzer {
                             int parsedInt = Integer.parseInt(lexeme);
 
                             if (parsedInt >= MIN_BYTE && parsedInt <= MAX_BYTE) // byte
-                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.BYTE);
+                                sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.BYTE);
 
                             else if (parsedInt >= MIN_INT && parsedInt <= MAX_INT) // integer
-                                sym = new Symbol(Token.CONSTANT, lexeme, Symbol.Type.INTEGER);
+                                sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.INTEGER);
 
                         } catch (NumberFormatException e) {
                             throw new UnknownLexeme(lineNumber, lexeme);
@@ -300,6 +300,7 @@ public class LexicalAnalyzer {
                     }
 
                     break;
+
             }
 
 

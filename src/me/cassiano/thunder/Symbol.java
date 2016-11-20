@@ -28,15 +28,15 @@ public class Symbol {
 
     private Token token;
     private String lexeme;
-    private Type type;
-    private Class class_;
+    private SymbolClass class_;
+    private SymbolType type;
 
     public Symbol(Token token, String lexeme) {
         this.token = token;
         this.lexeme = lexeme;
     }
 
-    public Symbol(Token token, String lexeme, Type type) {
+    public Symbol(Token token, String lexeme, SymbolType type) {
         this.token = token;
         this.lexeme = lexeme;
         this.type = type;
@@ -56,36 +56,19 @@ public class Symbol {
         return token;
     }
 
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
-    }
-
-    public Class getSymbolClass() {
+    public SymbolClass getClass_() {
         return class_;
     }
 
-    public void setSymbolClass(Class class_) {
+    public void setClass_(SymbolClass class_) {
         this.class_ = class_;
     }
 
-
-    public enum Type {
-
-        STRING,
-        HEX,
-        INTEGER,
-        BYTE,
-        BOOLEAN
+    public SymbolType getType() {
+        return type;
     }
 
-    public enum Class {
-        CONST,
-        VAR
+    public void setType(SymbolType type) {
+        this.type = type;
     }
-
-
 }
