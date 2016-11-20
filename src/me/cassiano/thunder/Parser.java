@@ -510,7 +510,7 @@ public class Parser {
         switch (currentToken.getToken()) {
             case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
-                expression();
+                type = expression();
                 casaToken(RIGHT_PARENTHESIS);
                 break;
             case ID:
