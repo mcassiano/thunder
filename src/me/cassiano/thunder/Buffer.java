@@ -14,9 +14,9 @@ public class Buffer {
     public static List<String> real = new ArrayList<>();
     public BufferedWriter arquivo;
 
-    public Buffer() throws Exception{
+    public Buffer() throws IOException{
         buffer = new ArrayList<>();
-        arquivo = new BufferedWriter(new FileWriter("c:/8086/codigo.asm"));
+        arquivo = new BufferedWriter(new FileWriter("codigo.asm"));
     }
 
 /*    public void otimizar(){
