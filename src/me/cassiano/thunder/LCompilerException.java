@@ -138,3 +138,21 @@ class IncompatibleTypes extends Exception {
     }
 
 }
+
+class IncompatibleIdentifierClass extends Exception {
+
+    private String message;
+
+    IncompatibleIdentifierClass(int line, String lexeme) {
+        super();
+
+        String messageFormat = "Linha %d: Classe de identificador incompatível ('%s').";
+        message = String.format(messageFormat, line, lexeme);
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+}

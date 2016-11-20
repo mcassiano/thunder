@@ -94,7 +94,7 @@ public class Parser {
             throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(), currentToken.getToken());
     }
 
-    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+    public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes, IncompatibleIdentifierClass {
 
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
 
@@ -169,27 +169,56 @@ public class Parser {
         return true;
     }
 
-    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+    public void commands() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes, IncompatibleIdentifierClass {
 
         if (currentToken == null)
             return;
 
+        SymbolType tempType;
+
         switch (currentToken.getToken()) {
             case ID:
 
-//                if (!SymbolTable.get().hasSymbol(currentToken.getLexeme()))
-//                    throw new UnknownLexeme(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+                Symbol id = currentToken;
+
+                if (id.getClass_() == null)
+                    throw new UnknownIdentifier(
+                            LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
+
+                else if (id.getClass_() == SymbolClass.CONST)
+                    throw new IncompatibleIdentifierClass(
+                            LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
 
                 casaToken(ID);
                 casaToken(ATTRIBUTION);
-                expression();
+
+                tempType = expression();
+
+
+                if (id.getType() != tempType)
+                    if (!(id.getType() == SymbolType.INTEGER && tempType == SymbolType.BYTE))
+                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), id.getType().toString(), tempType.toString());
+
+
                 casaToken(SEMICOLON);
                 break;
 
             case READ_LINE:
                 casaToken(READ_LINE);
                 casaToken(LEFT_PARENTHESIS);
+
+                Symbol tempId = currentToken;
                 casaToken(ID);
+
+                if (tempId.getClass_() == null)
+                    throw new UnknownIdentifier(LexicalAnalyzer.get().getLineNumber(), tempId.getLexeme());
+
+                else if (tempId.getClass_() == SymbolClass.CONST)
+                    throw new IncompatibleIdentifierClass(LexicalAnalyzer.get().getLineNumber(), tempId.getLexeme());
+
+                else if (tempId.getType() == SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempId.getLexeme());
+
                 casaToken(RIGHT_PARENTHESIS);
                 casaToken(SEMICOLON);
                 break;
@@ -203,11 +232,17 @@ public class Parser {
 
                 casaToken(LEFT_PARENTHESIS);
 
-                expression();
+                tempType = expression();
+
+                if (tempType == SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
 
                 while (currentToken.getToken() == COMMA) {
                     casaToken(COMMA);
-                    expression();
+                    tempType = expression();
+
+                    if (tempType == SymbolType.LOGICAL)
+                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
                 }
 
                 casaToken(RIGHT_PARENTHESIS);
@@ -217,7 +252,11 @@ public class Parser {
             case WHILE:
                 casaToken(WHILE);
                 casaToken(LEFT_PARENTHESIS);
-                expression();
+                tempType = expression();
+
+                if (tempType != SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
+
                 casaToken(RIGHT_PARENTHESIS);
 
                 if (currentToken.getToken() == BEGIN) {
@@ -234,7 +273,11 @@ public class Parser {
             case IF:
                 casaToken(IF);
                 casaToken(LEFT_PARENTHESIS);
-                expression();
+                tempType = expression();
+
+                if (tempType != SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
+
                 casaToken(RIGHT_PARENTHESIS);
 
                 if (currentToken.getToken() == BEGIN) {

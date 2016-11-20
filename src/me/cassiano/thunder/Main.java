@@ -60,7 +60,7 @@ public class Main {
             Parser p = new Parser(stream);
             p.start();
 
-        } catch (IOException e) {
+        } catch (IOException | IncompatibleIdentifierClass e) {
             e.printStackTrace();
 
         } catch (UnexpectedEndOfFileException | UnexpectedToken | UnknownLexeme |
