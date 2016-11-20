@@ -156,3 +156,21 @@ class IncompatibleIdentifierClass extends Exception {
     }
 
 }
+
+class IdentifierInUse extends Exception {
+
+    private String message;
+
+    IdentifierInUse(int line, String lexeme) {
+        super();
+
+        String messageFormat = "Linha %d: Identificador já declarado ('%s').";
+        message = String.format(messageFormat, line, lexeme);
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+}
