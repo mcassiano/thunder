@@ -121,7 +121,7 @@ class IncompatibleTypes extends Exception {
     IncompatibleTypes(int line, String expected, String actual) {
         super();
 
-        String messageFormat = "Linha %d: Tipos incompatíveis. Esperado '%s', recebido '%s'.";
+        String messageFormat = "Linha %d: Tipos incompatíveis ('%s' e '%s').";
         message = String.format(messageFormat, line, expected, actual);
     }
 
@@ -130,6 +130,24 @@ class IncompatibleTypes extends Exception {
 
         String messageFormat = "Linha %d: Tipo incompatível (%s).";
         message = String.format(messageFormat, line, type);
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+
+}
+
+class IncompatibleIdentifierClass extends Exception {
+
+    private String message;
+
+    IncompatibleIdentifierClass(int line, String lexeme) {
+        super();
+
+        String messageFormat = "Linha %d: Classe de identificador incompatível ('%s').";
+        message = String.format(messageFormat, line, lexeme);
     }
 
     @Override
