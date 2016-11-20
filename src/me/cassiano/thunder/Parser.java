@@ -118,20 +118,15 @@ public class Parser {
             casaToken(FINAL);
 
 
+            casaToken(ID);
+
             currentToken.setClass_(SymbolClass.CONST);
             SymbolTable.get().putSymbol(currentToken);
 
-            if (currentToken.getToken() == ID)
-                SymbolTable.get().putSymbol(currentToken);
-
-
-            currentToken.setType(expression());
-
-
-
-            casaToken(ID);
             casaToken(ATTRIBUTION);
             expression();
+            currentToken.setType(expression());
+
 
         } else {
             switch (currentToken.getToken()) {
