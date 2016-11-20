@@ -228,7 +228,7 @@ public class LexicalAnalyzer {
                     } else {
                         fileStream.unread(currentChar.charAt(0));
                         state = State.Q_END;
-                        sym = new Symbol(Token.CONSTANT, lexeme);
+                        sym = new Symbol(Token.CONSTANT, lexeme, SymbolType.BYTE);
 
                     }
 
