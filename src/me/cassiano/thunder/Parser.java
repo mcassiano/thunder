@@ -167,8 +167,7 @@ public class Parser {
                 SymbolType type = exp_value_const();
 
                 if (type != tempType)
-                    if (!(tempType == SymbolType.INTEGER && type == SymbolType.BYTE ||
-                            tempType == SymbolType.BYTE && type == SymbolType.INTEGER))
+                    if (!(tempType == SymbolType.INTEGER && type == SymbolType.BYTE))
                         throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), type.toString());
             }
 
