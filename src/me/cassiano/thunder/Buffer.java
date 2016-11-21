@@ -11,12 +11,12 @@ import java.util.List;
 
 public class Buffer {
     public static List<String> buffer;
-    public static List<String> real = new ArrayList<>();
+    public static List<String> real = new ArrayList<>();//para fazer otimização
     public BufferedWriter arquivo;
 
-    public Buffer() throws Exception{
+    public Buffer() throws IOException{
         buffer = new ArrayList<>();
-        arquivo = new BufferedWriter(new FileWriter("c:/8086/codigo.asm"));
+        arquivo = new BufferedWriter(new FileWriter("codigo.asm"));
     }
 
 /*    public void otimizar(){
@@ -43,7 +43,7 @@ public class Buffer {
     }
 */
     public void criarArquivo() throws IOException{
-        for(String s : real){
+        for(String s : buffer){ // mudar para for(String s : real) p/ fazer a otimização
             arquivo.write(s);
             arquivo.newLine();
         }

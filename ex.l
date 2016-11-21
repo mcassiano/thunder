@@ -1,12 +1,10 @@
 /* inicio do arquivo */
 
-byte x <- 100;
+byte x <- 0;
 int y <- 9;
-boolean z <- 10;
 final a <- 100;
 
-x <- (2*3)+(2-1);
-x <- 0;
+x <- 11;
 readln(x);
 
 write(x);

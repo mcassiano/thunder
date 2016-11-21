@@ -72,8 +72,21 @@ public class Parser {
     private Symbol currentToken;
     private PushbackInputStream fileStream;
 
+    Memoria memoria;
+    Rotulo rotulo;
+    Buffer buf;
+    int endereco = memoria.contador;
+
+    int F_end = 0;
+    int T_end = 0;
+    int Exps_end = 0;
+    int Exp_end = 0;
+
     public Parser(PushbackInputStream fileStream) throws IOException {
         this.fileStream = fileStream;
+        memoria = new Memoria();
+        rotulo = new Rotulo();
+        buf = new Buffer();
     }
 
     public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
@@ -96,15 +109,39 @@ public class Parser {
 
     public void start() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes, IncompatibleIdentifierClass, IdentifierInUse {
 
+
+        //cabeçalho
+
+        buf.buffer.add("sseg SEGMENT STACK ;início seg. pilha");
+        buf.buffer.add("byte 4000h DUP(?) ;dimensiona pilha");
+        buf.buffer.add("sseg ENDS ;fim seg. pilha");
+        buf.buffer.add("dseg SEGMENT PUBLIC ;início seg. dados");
+        buf.buffer.add("byte 4000h DUP(?) ;temporários");
+        endereco = memoria.alocarTemp();
+
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
 
         while (declaration()) {
             casaToken(SEMICOLON);
         }
 
+        buf.buffer.add("dseg ENDS ;fim seg. dados");
+        buf.buffer.add("cseg SEGMENT PUBLIC ;início seg. código");
+        buf.buffer.add("ASSUME CS:cseg, DS:dseg");
+        buf.buffer.add("strt:");
+        buf.buffer.add("mov ax, dseg");
+        buf.buffer.add("mov ds, ax");
+
         do {
             commands();
         } while (fileStream.available() != 0);
+
+        buf.buffer.add("mov ah, 4Ch");
+        buf.buffer.add("int 21h");
+        buf.buffer.add("cseg ENDS ;fim seg. código");
+        buf.buffer.add("END strt ;fim programa");
+
+        buf.criarArquivo();
 
     }
 
