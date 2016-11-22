@@ -1,10 +1,11 @@
 /* inicio do arquivo */
 
 byte x;
-string y ;
+byte y;
 final a <- 100;
 
 x <- 11;
+y <- 0;
 readln(x);
 
 write(x);

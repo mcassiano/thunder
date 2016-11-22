@@ -81,6 +81,10 @@ public class Parser {
     int T_end = 0;
     int Exps_end = 0; // n existe esse EXPs
     int Exp_end = 0;
+    int Exp_value_const_end = 0;
+    int Exp_value_end = 0;
+    int Exp_product_end = 0;
+
 
     public Parser(PushbackInputStream fileStream) throws IOException {
         this.fileStream = fileStream;
@@ -164,6 +168,8 @@ public class Parser {
             casaToken(ATTRIBUTION);
             SymbolType tempType = exp_value_const();
 
+
+
             tempID.setType(tempType);
 
         } else {
@@ -211,7 +217,7 @@ public class Parser {
                         throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), type.toString());
             }
 
-            //Geração de código
+            //Geração de código #gcodigo
 
 
             String lexTemp = tempId.getLexeme(); // olhar TRUE FALSE
@@ -256,6 +262,8 @@ public class Parser {
                 tempId.setType(tempType);
 
                 casaToken(ID);
+
+                atrib=false;
 
                 if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
 
@@ -605,6 +613,7 @@ public class Parser {
             UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         SymbolType mainType = exp_value();
+        //Exp_product_end=
 
         while (currentToken.getToken() == ASTERISK ||
                 currentToken.getToken() == FORWARD_SLASH ||
@@ -720,10 +729,18 @@ public class Parser {
             case TRUE:
                 type = SymbolType.LOGICAL;
                 casaToken(TRUE);
+
+                int temporario = memoria.alocarLogico();
+                buf.buffer.add("	mov al, 0ffh");
+                buf.buffer.add("	mov ds:[" + temporario + "], al");
                 break;
             case FALSE:
                 type = SymbolType.LOGICAL;
                 casaToken(FALSE);
+
+                temporario = memoria.alocarLogico();
+                buf.buffer.add("	mov al, 0h");
+                buf.buffer.add("	mov ds:[" + temporario + "], al");
                 break;
             default:
                 throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(),
