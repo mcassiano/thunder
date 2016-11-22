@@ -1,7 +1,7 @@
 /* inicio do arquivo */
 
-byte x <- 0;
-int y <- 9;
+byte x;
+string y ;
 final a <- 100;
 
 x <- 11;

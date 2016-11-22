@@ -79,7 +79,7 @@ public class Parser {
 
     int F_end = 0;
     int T_end = 0;
-    int Exps_end = 0;
+    int Exps_end = 0; // n existe esse EXPs
     int Exp_end = 0;
 
     public Parser(PushbackInputStream fileStream) throws IOException {
@@ -199,13 +199,50 @@ public class Parser {
 
             casaToken(ID);
 
+            boolean atrib=false;
+
             if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
                 casaToken(ATTRIBUTION);
+                atrib=true;
                 SymbolType type = exp_value_const();
 
                 if (type != tempType)
                     if (!(tempType == SymbolType.INTEGER && type == SymbolType.BYTE))
                         throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), type.toString());
+            }
+
+            //Geração de código
+
+
+            String lexTemp = tempId.getLexeme(); // olhar TRUE FALSE
+
+
+
+            if(atrib==false){ // se n foi atribuido valor a variavel
+
+                switch (tempId.getType()){
+                    case INTEGER:
+                        //buf.buffer.add("sword " + lexTemp + " ; byte " + tempId.getLexeme());
+                        buf.buffer.add("sword ? ; int " + tempId.getLexeme());
+                        endereco = memoria.alocarInteiro();
+                        break;
+                    case LOGICAL:
+                        buf.buffer.add("byte ? ; tipo logico " + tempId.getLexeme());
+                        endereco = memoria.alocarLogico();
+
+                        break;
+                    case STRING:
+                        buf.buffer.add("byte  256 DUP (?) ; String"); //faltando $ pode fazer dinamico dps
+                        endereco = memoria.alocarString(256);
+                        //endereco = memoria.alocarString(s.getLexema().length() - 1);
+                        //buf.buffer.add("byte " + s.getLexema().substring(0, s.getLexema().length() - 1) + "$" + s.getLexema().charAt(s.getLexema().length() - 1) + "; string " + temp.getLexema() + " em " + endereco);
+                        break;
+                    case BYTE:
+                        //buf.buffer.add("byte " + lexTemp + " ; byte " + tempId.getLexeme());
+                        buf.buffer.add("byte ? ; byte " + tempId.getLexeme());
+                        endereco = memoria.alocarByte();
+                        break;
+                }
             }
 
             while (currentToken.getToken().equals(Token.COMMA)) {
@@ -382,8 +419,12 @@ public class Parser {
         }
     }
 
-    public void logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
-        switch (currentToken.getToken()) {
+    public Symbol logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
+
+        Symbol temp=currentToken;
+
+
+        switch (temp.getToken()) {
             case LESS_THAN:
                 casaToken(LESS_THAN);
                 break;
@@ -403,11 +444,14 @@ public class Parser {
                 casaToken(EQUALS);
                 break;
         }
+
+        return temp;
     }
 
     public SymbolType expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         SymbolType expType = exp_sum();
+        // ---------------------------------------- faltando passar endereço olhar na geração de codigo
 
         if (currentToken == null)
             return null;
@@ -427,7 +471,7 @@ public class Parser {
                     !(currentToken.getToken() == NOT_EQUALS || currentToken.getToken() == EQUALS))
                 throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString());
 
-            logic_operators(); // casa token está dentro desse metodo
+            Symbol op=logic_operators(); // casa token está dentro desse metodo armazena tipo da op logica
 
 
             SymbolType tempType = exp_sum();
@@ -437,9 +481,70 @@ public class Parser {
                 if (!((expType == SymbolType.INTEGER && tempType == SymbolType.BYTE) ||
                         (tempType == SymbolType.INTEGER && expType == SymbolType.BYTE)))
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString(), tempType.toString());
+            }else{
+                //geração de codigo #gcodigo
+
+                //int temporario = memoria.alocarTempLogico();
+                buf.buffer.add("mov ax, DS:[" + Exp_end + "]"); // verificar parte do BYTE ou INT parse linha 856
+
+                buf.buffer.add("mov cx, ax");
+
+                buf.buffer.add("mov bl, DS:[" + Exps_end + "]");
+
+                buf.buffer.add("mov al, bl");
+
+                buf.buffer.add("mov ah, 0");
+
+                buf.buffer.add("mov bx, ax");
+
+                buf.buffer.add("mov ax, cx");
+
             }
 
+            buf.buffer.add("cmp ax, bx");
+
+            String RotuloVerdadeiro = rotulo.novoRotulo();
+
+            switch(op.getToken()){
+                case GREATER_THAN:
+                    buf.buffer.add("jg " + RotuloVerdadeiro);
+
+                    break;
+                case LESS_THAN:
+                    buf.buffer.add("jl " + RotuloVerdadeiro);
+
+                    break;
+                case GREATER_THAN_EQUALS:
+                    buf.buffer.add("jge " + RotuloVerdadeiro);
+
+                    break;
+                case LESS_THAN_EQUALS:
+                    buf.buffer.add("jle " + RotuloVerdadeiro);
+
+                    break;
+                case EQUALS:
+                    buf.buffer.add("je " + RotuloVerdadeiro);
+
+                    break;
+                case NOT_EQUALS:
+                    buf.buffer.add("jne " + RotuloVerdadeiro);
+
+                    break;
+            }
+
+            buf.buffer.add("mov AL, 0");
+
+            String RotuloFalso = rotulo.novoRotulo();
+            buf.buffer.add("jmp " + RotuloFalso);
+            buf.buffer.add(RotuloVerdadeiro + ":");
+            buf.buffer.add("mov AL, 0FFh");
+            buf.buffer.add(RotuloFalso + ":");
+
+            Exp_end = memoria.novoTemp();
+
             expType = SymbolType.LOGICAL;
+
+            buf.buffer.add("mov DS:[" + Exp_end + "], AL");
 
         }
 
