@@ -30,6 +30,7 @@ public class Symbol {
     private String lexeme;
     private SymbolClass class_;
     private SymbolType type;
+    private int memoryAddress;
 
     public Symbol(Token token, String lexeme) {
         this.token = token;
@@ -70,5 +71,13 @@ public class Symbol {
 
     public void setType(SymbolType type) {
         this.type = type;
+    }
+
+    public int getMemoryAddress() {
+        return memoryAddress;
+    }
+
+    public void setMemoryAddress(int memoryAddress) {
+        this.memoryAddress = memoryAddress;
     }
 }

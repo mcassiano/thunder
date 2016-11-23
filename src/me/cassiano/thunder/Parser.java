@@ -69,28 +69,15 @@ import static me.cassiano.thunder.Token.WRITE_LINE;
 
 public class Parser {
 
+    private final Buffer buffer;
+
     private Symbol currentToken;
     private PushbackInputStream fileStream;
 
-    Memoria memoria;
-    Rotulo rotulo;
-    Buffer buf;
-    int endereco = memoria.contador;
 
-    int F_end = 0;
-    int T_end = 0;
-    int Exps_end = 0; // n existe esse EXPs
-    int Exp_end = 0;
-    int Exp_value_const_end = 0;
-    int Exp_value_end = 0;
-    int Exp_product_end = 0;
-
-
-    public Parser(PushbackInputStream fileStream) throws IOException {
+    public Parser(PushbackInputStream fileStream, String outputFile) throws IOException {
         this.fileStream = fileStream;
-        memoria = new Memoria();
-        rotulo = new Rotulo();
-        buf = new Buffer();
+        this.buffer = new Buffer(outputFile);
     }
 
     public void casaToken(Token tokenrecebido) throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
@@ -102,7 +89,7 @@ public class Parser {
             String message = String.format(messageFormat, currentToken.getToken().name(),
                     currentToken.getLexeme());
 
-            System.out.println(message);
+//            System.out.println(message);
 
             currentToken = LexicalAnalyzer.get().analyze(fileStream);
         } else if (currentToken == null)
@@ -116,12 +103,11 @@ public class Parser {
 
         //cabeçalho
 
-        buf.buffer.add("sseg SEGMENT STACK ;início seg. pilha");
-        buf.buffer.add("byte 4000h DUP(?) ;dimensiona pilha");
-        buf.buffer.add("sseg ENDS ;fim seg. pilha");
-        buf.buffer.add("dseg SEGMENT PUBLIC ;início seg. dados");
-        buf.buffer.add("byte 4000h DUP(?) ;temporários");
-        endereco = memoria.alocarTemp();
+        buffer.getBuffer().add("sseg SEGMENT STACK ;início seg. pilha");
+        buffer.getBuffer().add("byte 16384 DUP(?) ;dimensiona pilha");
+        buffer.getBuffer().add("sseg ENDS ;fim seg. pilha");
+        buffer.getBuffer().add("dseg SEGMENT PUBLIC ;início seg. dados");
+        buffer.getBuffer().add("byte 16384 DUP(?) ;temporários");
 
         this.currentToken = LexicalAnalyzer.get().analyze(fileStream); //le o primeiro token
 
@@ -129,23 +115,23 @@ public class Parser {
             casaToken(SEMICOLON);
         }
 
-        buf.buffer.add("dseg ENDS ;fim seg. dados");
-        buf.buffer.add("cseg SEGMENT PUBLIC ;início seg. código");
-        buf.buffer.add("ASSUME CS:cseg, DS:dseg");
-        buf.buffer.add("strt:");
-        buf.buffer.add("mov ax, dseg");
-        buf.buffer.add("mov ds, ax");
+        buffer.getBuffer().add("dseg ENDS ;fim seg. dados");
+        buffer.getBuffer().add("cseg SEGMENT PUBLIC ;início seg. código");
+        buffer.getBuffer().add("ASSUME CS:cseg, DS:dseg");
+        buffer.getBuffer().add("strt:");
+        buffer.getBuffer().add("mov ax, dseg");
+        buffer.getBuffer().add("mov ds, ax");
 
         do {
             commands();
         } while (fileStream.available() != 0);
 
-        buf.buffer.add("mov ah, 4Ch");
-        buf.buffer.add("int 21h");
-        buf.buffer.add("cseg ENDS ;fim seg. código");
-        buf.buffer.add("END strt ;fim programa");
+        buffer.getBuffer().add("mov ah, 4Ch");
+        buffer.getBuffer().add("int 21h");
+        buffer.getBuffer().add("cseg ENDS ;fim seg. código");
+        buffer.getBuffer().add("END strt ;fim programa");
 
-        buf.criarArquivo();
+        buffer.dump();
 
     }
 
@@ -166,13 +152,35 @@ public class Parser {
             tempID.setClass_(SymbolClass.CONST);
             casaToken(ID);
             casaToken(ATTRIBUTION);
-            SymbolType tempType = exp_value_const();
+            ExpressionReturn tempReturn = exp_value_const();
+            tempID.setType(tempReturn.getType());
+            tempID.setMemoryAddress(tempReturn.getAddress());
 
+            switch (tempID.getType()) {
 
+                case STRING:
+                    buffer.getBuffer().add(String.format("byte \"%s$\" ; const string %s em %d",
+                            tempReturn.getValue(), tempID.getLexeme(), tempID.getMemoryAddress()));
+                    break;
 
-            tempID.setType(tempType);
+                case BYTE:
+                    buffer.getBuffer().add(String.format("byte %s ; const byte %s em %d",
+                            tempReturn.getValue(), tempID.getLexeme(), tempID.getMemoryAddress()));
+                    break;
+
+                case INTEGER:
+                    buffer.getBuffer().add(String.format("sword %s ; const int %s em %d",
+                            tempReturn.getValue(), tempID.getLexeme(), tempID.getMemoryAddress()));
+                    break;
+
+                case LOGICAL:
+                    buffer.getBuffer().add(String.format("byte %s ; const boolean %s em %d",
+                            tempReturn.getValue(), tempID.getLexeme(), tempID.getMemoryAddress()));
+                    break;
+            }
 
         } else {
+
             SymbolType tempType;
 
             switch (currentToken.getToken()) {
@@ -199,56 +207,51 @@ public class Parser {
             if (currentToken.getClass_() != null)
                 throw new IdentifierInUse(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
 
+
             Symbol tempId = currentToken;
             tempId.setClass_(SymbolClass.VAR);
             tempId.setType(tempType);
-
+            tempId.setMemoryAddress(MemoryManager.get().allocVariable(tempType));
             casaToken(ID);
 
-            boolean atrib=false;
+            boolean hasAttribution = currentToken.getToken().equals(Token.ATTRIBUTION);
 
-            if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
+            if (hasAttribution) {
+
                 casaToken(ATTRIBUTION);
-                atrib=true;
-                SymbolType type = exp_value_const();
+                ExpressionReturn attrExpType = exp_value_const();
 
-                if (type != tempType)
-                    if (!(tempType == SymbolType.INTEGER && type == SymbolType.BYTE))
-                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), type.toString());
-            }
+                switch (attrExpType.getType()) {
 
-            //Geração de código #gcodigo
-
-
-            String lexTemp = tempId.getLexeme(); // olhar TRUE FALSE
-
-
-
-            if(atrib==false){ // se n foi atribuido valor a variavel
-
-                switch (tempId.getType()){
-                    case INTEGER:
-                        //buf.buffer.add("sword " + lexTemp + " ; byte " + tempId.getLexeme());
-                        buf.buffer.add("sword ? ; int " + tempId.getLexeme());
-                        endereco = memoria.alocarInteiro();
-                        break;
-                    case LOGICAL:
-                        buf.buffer.add("byte ? ; tipo logico " + tempId.getLexeme());
-                        endereco = memoria.alocarLogico();
-
-                        break;
                     case STRING:
-                        buf.buffer.add("byte  256 DUP (?) ; String"); //faltando $ pode fazer dinamico dps
-                        endereco = memoria.alocarString(256);
-                        //endereco = memoria.alocarString(s.getLexema().length() - 1);
-                        //buf.buffer.add("byte " + s.getLexema().substring(0, s.getLexema().length() - 1) + "$" + s.getLexema().charAt(s.getLexema().length() - 1) + "; string " + temp.getLexema() + " em " + endereco);
+                        buffer.getBuffer().add(String.format("byte \"%s$\" ; const string %s em %d",
+                                attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
                         break;
+
                     case BYTE:
-                        //buf.buffer.add("byte " + lexTemp + " ; byte " + tempId.getLexeme());
-                        buf.buffer.add("byte ? ; byte " + tempId.getLexeme());
-                        endereco = memoria.alocarByte();
+                        buffer.getBuffer().add(String.format("byte %s ; const byte %s em %d",
+                                attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                        break;
+
+                    case INTEGER:
+                        buffer.getBuffer().add(String.format("sword %s ; const int %s em %d",
+                                attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                        break;
+
+                    case LOGICAL:
+                        buffer.getBuffer().add(String.format("byte %s ; const boolean %s em %d",
+                                attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
                         break;
                 }
+
+                buffer.getBuffer().add(String.format("byte 256 DUP (?) ; var string %s em %d", tempId.getLexeme(), tempId.getMemoryAddress()));
+                buffer.getBuffer().add(String.format("mov ax, ds:[%d]", attrExpType.getAddress()));
+                buffer.getBuffer().add(String.format("mov ds:[%s], ax", tempId.getMemoryAddress()));
+
+                if (attrExpType.getType() != tempType)
+                    if (!(tempType == SymbolType.INTEGER && attrExpType.getType() == SymbolType.BYTE))
+                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), attrExpType.toString());
+
             }
 
             while (currentToken.getToken().equals(Token.COMMA)) {
@@ -260,19 +263,45 @@ public class Parser {
                 tempId = currentToken;
                 tempId.setClass_(SymbolClass.VAR);
                 tempId.setType(tempType);
+                tempId.setMemoryAddress(MemoryManager.get().allocVariable(tempType));
 
                 casaToken(ID);
-
-                atrib=false;
 
                 if (currentToken.getToken().equals(Token.ATTRIBUTION)) {
 
                     casaToken(ATTRIBUTION);
-                    SymbolType type = exp_value_const();
+                    ExpressionReturn attrExpType = exp_value_const();
 
-                    if (type != tempType)
-                        if (!(tempType == SymbolType.INTEGER && type == SymbolType.BYTE))
-                            throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), type.toString());
+                    switch (attrExpType.getType()) {
+
+                        case STRING:
+                            buffer.getBuffer().add(String.format("byte \"%s$\" ; const string %s em %d",
+                                    attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                            break;
+
+                        case BYTE:
+                            buffer.getBuffer().add(String.format("byte %s ; const byte %s em %d",
+                                    attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                            break;
+
+                        case INTEGER:
+                            buffer.getBuffer().add(String.format("sword %s ; const int %s em %d",
+                                    attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                            break;
+
+                        case LOGICAL:
+                            buffer.getBuffer().add(String.format("byte %s ; const boolean %s em %d",
+                                    attrExpType.getValue(), attrExpType.getValue(), attrExpType.getAddress()));
+                            break;
+                    }
+
+                    buffer.getBuffer().add(String.format("byte 256 DUP (' ') ; var string %s em %d", tempId.getLexeme(), tempId.getMemoryAddress()));
+                    buffer.getBuffer().add(String.format("mov ax, ds:[%d]", attrExpType.getAddress()));
+                    buffer.getBuffer().add(String.format("mov ds:[%s], ax", tempId.getMemoryAddress()));
+
+                    if (attrExpType.getType() != tempType)
+                        if (!(tempType == SymbolType.INTEGER && attrExpType.getType() == SymbolType.BYTE))
+                            throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString(), attrExpType.getType().toString());
                 }
             }
         }
@@ -284,7 +313,7 @@ public class Parser {
         if (currentToken == null)
             return;
 
-        SymbolType tempType;
+        ExpressionReturn tempType;
 
         switch (currentToken.getToken()) {
             case ID:
@@ -305,8 +334,8 @@ public class Parser {
                 tempType = expression();
 
 
-                if (id.getType() != tempType)
-                    if (!(id.getType() == SymbolType.INTEGER && tempType == SymbolType.BYTE))
+                if (id.getType() != tempType.getType())
+                    if ((id.getType() == SymbolType.BYTE && tempType.getType() == SymbolType.INTEGER))
                         throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), id.getType().toString(), tempType.toString());
 
 
@@ -336,22 +365,40 @@ public class Parser {
             case WRITE:
             case WRITE_LINE:
 
+                boolean newLine = false;
+
                 if (currentToken.getToken() == WRITE) {
                     casaToken(WRITE);
-                } else casaToken(WRITE_LINE);
+                } else {
+                    newLine = true;
+                    casaToken(WRITE_LINE);
+                }
 
                 casaToken(LEFT_PARENTHESIS);
 
-                tempType = expression();
+                ExpressionReturn expressionReturn = expression();
 
-                if (tempType == SymbolType.LOGICAL)
-                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
+                if (expressionReturn.getType() == SymbolType.LOGICAL)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expressionReturn.toString());
+
+                buffer.getBuffer().add(String.format("mov dx, %d ; imprime", expressionReturn.getAddress()));
+                buffer.getBuffer().add("mov ah, 09h ; imprime");
+                buffer.getBuffer().add("int 21h ; imprime");
+
+                if (newLine) {
+                    buffer.getBuffer().add("mov ah, 02h ; new line");
+                    buffer.getBuffer().add("mov dl, 0Dh ; new line");
+                    buffer.getBuffer().add("int 21h ; new line");
+                    buffer.getBuffer().add("mov DL, 0Ah ; new line");
+                    buffer.getBuffer().add("int 21h ; new line");
+                }
+
 
                 while (currentToken.getToken() == COMMA) {
                     casaToken(COMMA);
                     tempType = expression();
 
-                    if (tempType == SymbolType.LOGICAL)
+                    if (tempType.getType() == SymbolType.LOGICAL)
                         throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
                 }
 
@@ -364,7 +411,7 @@ public class Parser {
                 casaToken(LEFT_PARENTHESIS);
                 tempType = expression();
 
-                if (tempType != SymbolType.LOGICAL)
+                if (tempType.getType() != SymbolType.LOGICAL)
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
 
                 casaToken(RIGHT_PARENTHESIS);
@@ -385,7 +432,7 @@ public class Parser {
                 casaToken(LEFT_PARENTHESIS);
                 tempType = expression();
 
-                if (tempType != SymbolType.LOGICAL)
+                if (tempType.getType() != SymbolType.LOGICAL)
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), tempType.toString());
 
                 casaToken(RIGHT_PARENTHESIS);
@@ -427,9 +474,9 @@ public class Parser {
         }
     }
 
-    public Symbol logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
+    public Token logic_operators() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, InvalidCharacterException, UnknownLexeme {
 
-        Symbol temp=currentToken;
+        Symbol temp = currentToken;
 
 
         switch (temp.getToken()) {
@@ -453,13 +500,12 @@ public class Parser {
                 break;
         }
 
-        return temp;
+        return temp.getToken();
     }
 
-    public SymbolType expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
+    public ExpressionReturn expression() throws IOException, UnexpectedEndOfFileException, UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
-        SymbolType expType = exp_sum();
-        // ---------------------------------------- faltando passar endereço olhar na geração de codigo
+        ExpressionReturn expType = exp_sum();
 
         if (currentToken == null)
             return null;
@@ -471,125 +517,154 @@ public class Parser {
                 currentToken.getToken() == NOT_EQUALS ||
                 currentToken.getToken() == EQUALS) {
 
-            if (expType == SymbolType.STRING &&
+            if (expType.getType() == SymbolType.STRING &&
                     !(currentToken.getToken() == NOT_EQUALS || currentToken.getToken() == EQUALS))
                 throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString());
 
-            else if (expType == SymbolType.LOGICAL &&
+            else if (expType.getType() == SymbolType.LOGICAL &&
                     !(currentToken.getToken() == NOT_EQUALS || currentToken.getToken() == EQUALS))
                 throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString());
 
-            Symbol op=logic_operators(); // casa token está dentro desse metodo armazena tipo da op logica
+            Token op = logic_operators(); // casa token está dentro desse metodo armazena tipo da op logica
 
-
-            SymbolType tempType = exp_sum();
+            ExpressionReturn tempType = exp_sum();
 
             if (expType != tempType) {
 
-                if (!((expType == SymbolType.INTEGER && tempType == SymbolType.BYTE) ||
-                        (tempType == SymbolType.INTEGER && expType == SymbolType.BYTE)))
+                if (!((expType.getType() == SymbolType.INTEGER && tempType.getType() == SymbolType.BYTE) ||
+                        (tempType.getType() == SymbolType.INTEGER && expType.getType() == SymbolType.BYTE)))
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString(), tempType.toString());
-            }else{
-                //geração de codigo #gcodigo
-
-                //int temporario = memoria.alocarTempLogico();
-                buf.buffer.add("mov ax, DS:[" + Exp_end + "]"); // verificar parte do BYTE ou INT parse linha 856
-
-                buf.buffer.add("mov cx, ax");
-
-                buf.buffer.add("mov bl, DS:[" + Exps_end + "]");
-
-                buf.buffer.add("mov al, bl");
-
-                buf.buffer.add("mov ah, 0");
-
-                buf.buffer.add("mov bx, ax");
-
-                buf.buffer.add("mov ax, cx");
-
             }
 
-            buf.buffer.add("cmp ax, bx");
+            expType.setType(SymbolType.LOGICAL);
+            expType.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
 
-            String RotuloVerdadeiro = rotulo.novoRotulo();
+            if (op == GREATER_THAN) {
 
-            switch(op.getToken()){
-                case GREATER_THAN:
-                    buf.buffer.add("jg " + RotuloVerdadeiro);
+                String labelTrue = LabelManager.get().newLabel();
+                String labelEnd = LabelManager.get().newLabel();
 
-                    break;
-                case LESS_THAN:
-                    buf.buffer.add("jl " + RotuloVerdadeiro);
+                buffer.getBuffer().add("mov ax, ds:[" + expType.getAddress() + "]");
+                buffer.getBuffer().add("mov bx, ds:[" + tempType.getAddress() + "]");
+                buffer.getBuffer().add("cmp ax, bx");
+                buffer.getBuffer().add("jg " + labelTrue);
+                buffer.getBuffer().add("mov al, 0");
+                buffer.getBuffer().add("jmp " + labelEnd);
+                buffer.getBuffer().add(labelTrue + ":");
+                buffer.getBuffer().add("	mov al, 0ffh");
+                buffer.getBuffer().add(labelEnd + ":");
+                buffer.getBuffer().add("	mov ds:[" + expType.getAddress() + "], al");
 
-                    break;
-                case GREATER_THAN_EQUALS:
-                    buf.buffer.add("jge " + RotuloVerdadeiro);
+            } else if (op == LESS_THAN) {
 
-                    break;
-                case LESS_THAN_EQUALS:
-                    buf.buffer.add("jle " + RotuloVerdadeiro);
+                buffer.getBuffer().add("mov ah, 0");
+                buffer.getBuffer().add("mov bh, 0");
+                buffer.getBuffer().add("mov ax, ds:[" + expType.getAddress() + "]");
+                buffer.getBuffer().add("mov bx, ds:[" + tempType.getAddress() + "]");
+                buffer.getBuffer().add("cmp ax, bx");
 
-                    break;
-                case EQUALS:
-                    buf.buffer.add("je " + RotuloVerdadeiro);
+                String labelTrue = LabelManager.get().newLabel();
+                String labelEnd = LabelManager.get().newLabel();
 
-                    break;
-                case NOT_EQUALS:
-                    buf.buffer.add("jne " + RotuloVerdadeiro);
+                buffer.getBuffer().add("jl " + labelTrue);
+                buffer.getBuffer().add("mov al, 0");
 
-                    break;
+                buffer.getBuffer().add("jmp " + labelEnd);
+                buffer.getBuffer().add(labelTrue + ":");
+                buffer.getBuffer().add("mov al, 0ffh");
+                buffer.getBuffer().add(labelEnd + ":");
+                buffer.getBuffer().add("	mov ds:[" + expType.getAddress() + "], al");
+
+            } else if (op == GREATER_THAN_EQUALS) {
+
+                buffer.getBuffer().add("mov ah, 0");
+                buffer.getBuffer().add("mov bh, 0");
+                buffer.getBuffer().add("mov ax, ds:[" + expType.getAddress() + "]");
+                buffer.getBuffer().add("mov bx, ds:[" + tempType.getAddress() + "]");
+                buffer.getBuffer().add("cmp ax, bx");
+
+                String rotVerdadeiro = LabelManager.get().newLabel();
+
+                buffer.getBuffer().add("jge R" + rotVerdadeiro);
+                buffer.getBuffer().add("mov al, 0");
+
+                String rotFim = LabelManager.get().newLabel();
+
+                buffer.getBuffer().add("jmp R" + rotFim);
+                buffer.getBuffer().add(rotVerdadeiro + ":");
+                buffer.getBuffer().add("mov al, 0ffh");
+                buffer.getBuffer().add(rotFim + ":");
+                buffer.getBuffer().add("mov ds:[" + expType.getAddress() + "], al");
+
+            } else if (op == LESS_THAN_EQUALS) {
+
+                buffer.getBuffer().add("mov ah, 0");
+                buffer.getBuffer().add("mov bh, 0");
+                buffer.getBuffer().add("mov ax, ds:[" + expType.getAddress() + "]");
+                buffer.getBuffer().add("mov bx, ds:[" + tempType.getAddress() + "]");
+                buffer.getBuffer().add("cmp ax, bx");
+
+                String rotVerdadeiro = LabelManager.get().newLabel();
+
+                buffer.getBuffer().add("jle " + rotVerdadeiro);
+                buffer.getBuffer().add("mov al, 0");
+
+                String rotFim = LabelManager.get().newLabel();
+
+                buffer.getBuffer().add("jmp " + rotFim);
+                buffer.getBuffer().add(rotVerdadeiro + ":");
+                buffer.getBuffer().add("mov al, 0ffh");
+                buffer.getBuffer().add(rotFim + ":");
+                buffer.getBuffer().add("mov ds:[" + expType.getAddress() + "], al");
+
+
             }
-
-            buf.buffer.add("mov AL, 0");
-
-            String RotuloFalso = rotulo.novoRotulo();
-            buf.buffer.add("jmp " + RotuloFalso);
-            buf.buffer.add(RotuloVerdadeiro + ":");
-            buf.buffer.add("mov AL, 0FFh");
-            buf.buffer.add(RotuloFalso + ":");
-
-            Exp_end = memoria.novoTemp();
-
-            expType = SymbolType.LOGICAL;
-
-            buf.buffer.add("mov DS:[" + Exp_end + "], AL");
 
         }
 
         return expType;
     }
 
-    public SymbolType exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken,
+    public ExpressionReturn exp_sum() throws IOException, UnexpectedEndOfFileException, UnexpectedToken,
             UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
         if (currentToken == null)
             return null;
 
+        ExpressionReturn expressionReturn = new ExpressionReturn();
         Token sign = null;
-        Symbol symbol = currentToken;
 
-        if (currentToken.getToken() == PLUS) {
+        if (currentToken.getToken() == PLUS || currentToken.getToken() == MINUS) {
             sign = currentToken.getToken();
-            casaToken(PLUS);
-        } else if (currentToken.getToken() == MINUS) {
-            sign = currentToken.getToken();
-            casaToken(MINUS);
+            casaToken(currentToken.getToken());
         }
 
-        SymbolType mainType = exp_product();
+        ExpressionReturn mainType = exp_product();
 
         if ((sign == PLUS || sign == MINUS) &&
-                (mainType == SymbolType.STRING || mainType == SymbolType.LOGICAL))
+                (mainType.getType() == SymbolType.STRING || mainType.getType() == SymbolType.LOGICAL))
             throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), mainType.toString());
 
-        else if (sign == MINUS
-                && symbol.getToken() == ID)
-            mainType = SymbolType.INTEGER;
+        else if (sign == MINUS) {
+
+            expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.INTEGER));
+            expressionReturn.setType(SymbolType.INTEGER);
+
+            buffer.getBuffer().add(String.format("mov ax, ds:[%s] ; inverte sinal", mainType.getAddress()));
+            buffer.getBuffer().add("neg ax ; inverte sinal");
+            buffer.getBuffer().add(String.format("mov ds:[%s], ax ; inverte sinal", expressionReturn.getAddress()));
+        } else {
+            expressionReturn.setType(mainType.getType());
+            buffer.getBuffer().add(String.format("mov ax, ds:[%s] ; expressao", mainType.getAddress()));
+            buffer.getBuffer().add(String.format("mov ds:[%s], ax ; expressao", expressionReturn.getAddress()));
+        }
 
 
         while (currentToken.getToken() == PLUS ||
                 currentToken.getToken() == MINUS ||
                 currentToken.getToken() == OR) {
+
+            Token op = currentToken.getToken();
 
             switch (currentToken.getToken()) {
                 case PLUS:
@@ -603,17 +678,88 @@ public class Parser {
                     break;
             }
 
-            exp_product();
+            ExpressionReturn innerExpReturn = exp_product();
+
+            if (op != PLUS && (expressionReturn.getType() == SymbolType.STRING || innerExpReturn.getType() == SymbolType.STRING))
+                throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
+                        expressionReturn.getType().toString(), innerExpReturn.getType().toString());
+
+            if (innerExpReturn.getType() != mainType.getType()) {
+
+                if (innerExpReturn.getType() == SymbolType.STRING || expressionReturn.getType() == SymbolType.STRING)
+                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
+                            expressionReturn.getType().toString(), innerExpReturn.getType().toString());
+
+                expressionReturn.setType(SymbolType.INTEGER);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.INTEGER));
+
+            }
+
+            if (op == PLUS) {
+
+
+                switch (expressionReturn.getType()) {
+
+                    case STRING:
+                        buffer.getBuffer().add(String.format("mov ax, ds:[%d]", expressionReturn.getAddress()));
+                        buffer.getBuffer().add(String.format("mov bx, ds:[%d]", innerExpReturn.getAddress()));
+                        buffer.getBuffer().add("add ax, bx");
+                        buffer.getBuffer().add(String.format("mov ds:[%d], ax", expressionReturn.getAddress()));
+                        break;
+
+                    case BYTE:
+                        buffer.getBuffer().add(String.format("mov al, ds:[%d]", expressionReturn.getAddress()));
+                        buffer.getBuffer().add(String.format("mov bl, ds:[%d]", innerExpReturn.getAddress()));
+                        buffer.getBuffer().add("add bl, al");
+                        buffer.getBuffer().add(String.format("mov ds:[%d], bl", expressionReturn.getAddress()));
+                        break;
+
+                    case INTEGER:
+                        buffer.getBuffer().add(String.format("mov ax, ds:[%d]", expressionReturn.getAddress()));
+                        buffer.getBuffer().add("mov bh, 0");
+                        buffer.getBuffer().add(String.format("mov bx, ds:[%s]", innerExpReturn.getAddress()));
+                        buffer.getBuffer().add("add ax, bx");
+                        buffer.getBuffer().add(String.format("mov ds:[%d], ax", expressionReturn.getAddress()));
+                        break;
+                }
+
+
+            }
+
+            if (op == MINUS) {
+
+
+                switch (expressionReturn.getType()) {
+
+                    case BYTE:
+                        buffer.getBuffer().add(String.format("mov al, ds:[%d]", expressionReturn.getAddress()));
+                        buffer.getBuffer().add(String.format("mov bl, ds:[%d]", innerExpReturn.getAddress()));
+                        buffer.getBuffer().add("sub bl, al");
+                        buffer.getBuffer().add(String.format("mov ds:[%d], bl", expressionReturn.getAddress()));
+                        break;
+
+                    case INTEGER:
+                        buffer.getBuffer().add(String.format("mov ax, ds:[%d]", expressionReturn.getAddress()));
+                        buffer.getBuffer().add("mov bh, 0");
+                        buffer.getBuffer().add(String.format("mov bx, ds:[%s]", innerExpReturn.getAddress()));
+                        buffer.getBuffer().add("sub ax, bx");
+                        buffer.getBuffer().add(String.format("mov ds:[%d], ax", expressionReturn.getAddress()));
+                        break;
+                }
+
+
+            }
+
+
         }
 
-        return mainType;
+        return expressionReturn;
     }
 
-    public SymbolType exp_product() throws IOException, UnexpectedEndOfFileException,
+    public ExpressionReturn exp_product() throws IOException, UnexpectedEndOfFileException,
             UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
-        SymbolType mainType = exp_value();
-        //Exp_product_end=
+        ExpressionReturn expressionReturn = exp_value();
 
         while (currentToken.getToken() == ASTERISK ||
                 currentToken.getToken() == FORWARD_SLASH ||
@@ -633,66 +779,113 @@ public class Parser {
                     break;
             }
 
-            SymbolType innerType = exp_value();
+            ExpressionReturn innerType = exp_value();
 
-            if (mainType == SymbolType.STRING || innerType == SymbolType.STRING)
+            if (expressionReturn.getType() == SymbolType.STRING || innerType.getType() == SymbolType.STRING)
                 throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
-                        mainType.toString(), innerType.toString());
-
-            else if (op == FORWARD_SLASH || op == ASTERISK)
-                mainType = SymbolType.INTEGER;
+                        expressionReturn.toString(), innerType.toString());
 
             else if (op == AND) {
 
-                if (!(innerType == SymbolType.LOGICAL && mainType == SymbolType.LOGICAL))
+                if (!(innerType.getType() == SymbolType.LOGICAL && expressionReturn.getType() == SymbolType.LOGICAL))
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
-                            mainType.toString(), innerType.toString());
+                            expressionReturn.toString(), innerType.toString());
+            } else if (op == FORWARD_SLASH) {
+                expressionReturn.setType(SymbolType.INTEGER);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.INTEGER));
+
+                buffer.getBuffer().add(String.format("mov ax, ds:[%d] ; divisao", expressionReturn.getAddress()));
+                buffer.getBuffer().add(String.format("mov bx, ds:[%d] ; divisao", innerType.getAddress()));
+                buffer.getBuffer().add("div ax, bx ; divisao");
+                buffer.getBuffer().add(String.format("mov ds:[%d], ax ; divisao", expressionReturn.getAddress()));
+            } else if (op == ASTERISK) {
+
+                expressionReturn.setType(SymbolType.INTEGER);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.INTEGER));
+
+                buffer.getBuffer().add(String.format("mov al, ds:[%d] ; multiplicao", expressionReturn.getAddress()));
+                buffer.getBuffer().add(String.format("mov bl, ds:[%d] ; multiplicao", innerType.getAddress()));
+                buffer.getBuffer().add("mul bl ; multiplicao");
+                buffer.getBuffer().add(String.format("mov ds:[%d], ax ; multiplicao", expressionReturn.getAddress()));
             }
         }
 
-        return mainType;
+        return expressionReturn;
     }
 
-    private SymbolType exp_value() throws IOException, UnexpectedEndOfFileException,
+    private ExpressionReturn exp_value() throws IOException, UnexpectedEndOfFileException,
             UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
-        SymbolType type = null;
+        ExpressionReturn expressionReturn = new ExpressionReturn();
 
         switch (currentToken.getToken()) {
             case LEFT_PARENTHESIS:
                 casaToken(LEFT_PARENTHESIS);
-                type = expression();
+
+                ExpressionReturn innerExp = expression();
+                expressionReturn.setType(innerExp.getType());
+                expressionReturn.setAddress(innerExp.getAddress());
+
                 casaToken(RIGHT_PARENTHESIS);
                 break;
+
             case ID:
 
                 if (currentToken.getClass_() == null)
                     throw new UnknownIdentifier(LexicalAnalyzer.get().getLineNumber(), currentToken.getLexeme());
-                else type = currentToken.getType();
+                else {
+                    expressionReturn.setType(currentToken.getType());
+                    expressionReturn.setAddress(currentToken.getMemoryAddress());
+                }
 
                 casaToken(ID);
                 break;
+
             case NOT:
                 casaToken(NOT);
 
-                SymbolType expType = exp_value();
+                ExpressionReturn innerExpNot = expression();
 
-                if (expType != SymbolType.LOGICAL)
+                if (innerExpNot.getType() != SymbolType.LOGICAL)
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
-                            SymbolType.LOGICAL.toString(), expType.toString());
+                            SymbolType.LOGICAL.toString(), innerExpNot.toString());
 
-                type = SymbolType.LOGICAL;
+                expressionReturn.setType(SymbolType.LOGICAL);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
+
+                buffer.getBuffer().add(String.format("mov al, ds:[%d] ; nega bool", innerExpNot.getAddress()));
+                buffer.getBuffer().add("neg al ; nega bool");
+                buffer.getBuffer().add(String.format("mov ds:[%d], al ; nega bool", expressionReturn.getAddress()));
+
                 break;
+
             case CONSTANT:
-                type = currentToken.getType();
+
+                int constantTempAddress;
+
+                if (currentToken.getType() == SymbolType.STRING) {
+
+                    constantTempAddress = MemoryManager.get().allocNewTemp(SymbolType.STRING,
+                            currentToken.getLexeme().length() + 1);
+                } else
+                    constantTempAddress = MemoryManager.get().allocNewTemp(currentToken.getType());
+
+                expressionReturn.setType(currentToken.getType());
+                expressionReturn.setAddress(constantTempAddress);
+                buffer.getBuffer().add(String.format("mov ax, %s ; move const", currentToken.getLexeme()));
+                buffer.getBuffer().add(String.format("mov ds:[%s], ax ; move const", expressionReturn.getAddress()));
                 casaToken(CONSTANT);
                 break;
             case TRUE:
-                type = SymbolType.LOGICAL;
+                expressionReturn.setType(SymbolType.LOGICAL);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
+                buffer.getBuffer().add(String.format("mov ds:[%s], 0ffh ; boolean true", expressionReturn.getAddress()));
                 casaToken(TRUE);
                 break;
             case FALSE:
-                type = SymbolType.LOGICAL;
+                expressionReturn.setType(SymbolType.LOGICAL);
+                expressionReturn.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
+                buffer.getBuffer().add(String.format("mov ds:[%s], 0 ; boolean false", expressionReturn.getAddress()));
                 casaToken(FALSE);
                 break;
             default:
@@ -701,54 +894,74 @@ public class Parser {
 
         }
 
-        return type;
+        return expressionReturn;
     }
 
-    private SymbolType exp_value_const() throws IOException, UnexpectedEndOfFileException,
+    private ExpressionReturn exp_value_const() throws IOException, UnexpectedEndOfFileException,
             UnexpectedToken, UnknownLexeme, InvalidCharacterException, UnknownIdentifier, IncompatibleTypes {
 
-        SymbolType type = null;
+        ExpressionReturn expressionReturn = new ExpressionReturn();
+        Integer newTempAddress;
+
+        String newLexeme = "";
+
+        if (currentToken.getToken() == MINUS ||
+                currentToken.getToken() == PLUS) {
+
+            newLexeme += currentToken.getLexeme();
+            casaToken(currentToken.getToken());
+            currentToken.setType(SymbolType.INTEGER);
+        }
 
         switch (currentToken.getToken()) {
 
-            case NOT:
-                casaToken(NOT);
-
-                SymbolType expType = exp_value_const();
-
-                if (expType != SymbolType.LOGICAL)
-                    throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(),
-                            SymbolType.LOGICAL.toString(), expType.toString());
-
-                type = SymbolType.LOGICAL;
-                break;
             case CONSTANT:
-                type = currentToken.getType();
-                casaToken(CONSTANT);
+
+                if (currentToken.getType() == SymbolType.STRING) {
+
+                    int size = currentToken.getLexeme().length() + 1;
+                    newTempAddress = MemoryManager.get().allocVariable(currentToken.getType(), size);
+
+                    expressionReturn.setType(currentToken.getType());
+                    expressionReturn.setAddress(newTempAddress);
+                    expressionReturn.setValue(currentToken.getLexeme());
+                    casaToken(CONSTANT);
+
+                } else {
+
+                    newTempAddress = MemoryManager.get().allocVariable(currentToken.getType());
+                    expressionReturn.setType(currentToken.getType());
+                    expressionReturn.setAddress(newTempAddress);
+                    newLexeme += currentToken.getLexeme();
+                    expressionReturn.setValue(newLexeme);
+                    casaToken(CONSTANT);
+                }
                 break;
+
             case TRUE:
-                type = SymbolType.LOGICAL;
+                newTempAddress = MemoryManager.get().allocVariable(SymbolType.LOGICAL);
+                expressionReturn.setAddress(newTempAddress);
+                expressionReturn.setType(SymbolType.LOGICAL);
+                expressionReturn.setValue("0ffh");
                 casaToken(TRUE);
-
-                int temporario = memoria.alocarLogico();
-                buf.buffer.add("	mov al, 0ffh");
-                buf.buffer.add("	mov ds:[" + temporario + "], al");
                 break;
+
             case FALSE:
-                type = SymbolType.LOGICAL;
+                newTempAddress = MemoryManager.get().allocVariable(SymbolType.LOGICAL);
+                expressionReturn.setAddress(newTempAddress);
+                expressionReturn.setType(SymbolType.LOGICAL);
+                expressionReturn.setValue("0");
                 casaToken(FALSE);
-
-                temporario = memoria.alocarLogico();
-                buf.buffer.add("	mov al, 0h");
-                buf.buffer.add("	mov ds:[" + temporario + "], al");
                 break;
+
+
             default:
                 throw new UnexpectedToken(LexicalAnalyzer.get().getLineNumber(),
                         currentToken.getToken());
 
         }
 
-        return type;
+        return expressionReturn;
     }
 
 }

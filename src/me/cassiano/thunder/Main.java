@@ -57,8 +57,10 @@ public class Main {
         }
 
         try {
-            Parser p = new Parser(stream);
+            Parser p = new Parser(stream, outputFile);
             p.start();
+
+            System.out.println("PASSED.");
 
         } catch (IOException | UnexpectedEndOfFileException | UnexpectedToken | UnknownLexeme |
                 InvalidCharacterException | UnknownIdentifier | IncompatibleIdentifierClass | IdentifierInUse | IncompatibleTypes e) {

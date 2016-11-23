@@ -1,11 +1,5 @@
-/* inicio do arquivo */
+/* Exemplo de Programa na linguagem L */
 
-byte x <- 100;
-int y <- 9;
-final a <- 100;
+final n <- "Matheus";
 
-y <- 0;
-x <- 1;
-readln(x);
-
-write(x);
+writeln(n);
