@@ -1,5 +1,36 @@
-/* Exemplo de Programa na linguagem L */
+/* inicio do arquivo */
 
-final n <- "Matheus";
+final oi <- 1000;
+final nome <- "nome";
+string nome2 <- "nome";
 
-writeln(n);
+boolean x, y;
+x <- FALSE;
+x <- TRUE;
+
+readln(nome2);
+
+
+write(nome2);
+
+writeln("Ola' ",nome);
+while (x) x <- (x = TRUE);
+
+while (x) begin
+  writeln("Ola' ",nome);
+  x<-FALSE;
+endwhile
+
+while (x) begin
+  if (x) begin
+  x<-FALSE;
+endif
+else begin
+while (x) begin
+    x<-FALSE;
+endwhile
+endelse
+endwhile
+
+if (x) x<-1;
+else x<-2;

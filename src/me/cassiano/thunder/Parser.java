@@ -334,9 +334,14 @@ public class Parser {
                 tempType = expression();
 
 
-                if (id.getType() != tempType.getType())
-                    if ((id.getType() == SymbolType.BYTE && tempType.getType() == SymbolType.INTEGER))
-                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), id.getType().toString(), tempType.toString());
+                if (id.getType() != tempType.getType()) {
+
+                    if (id.getType() == SymbolType.LOGICAL || tempType.getType() == SymbolType.LOGICAL)
+                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), id.getType().toString(), tempType.getType().toString());
+
+                    if (!(id.getType() == SymbolType.INTEGER && tempType.getType() == SymbolType.BYTE))
+                        throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), id.getType().toString(), tempType.getType().toString());
+                }
 
 
                 casaToken(SEMICOLON);
@@ -529,15 +534,15 @@ public class Parser {
 
             ExpressionReturn tempType = exp_sum();
 
-            if (expType != tempType) {
+            expType.setType(SymbolType.LOGICAL);
+            expType.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
+
+            if (expType.getType() != tempType.getType()) {
 
                 if (!((expType.getType() == SymbolType.INTEGER && tempType.getType() == SymbolType.BYTE) ||
                         (tempType.getType() == SymbolType.INTEGER && expType.getType() == SymbolType.BYTE)))
                     throw new IncompatibleTypes(LexicalAnalyzer.get().getLineNumber(), expType.toString(), tempType.toString());
             }
-
-            expType.setType(SymbolType.LOGICAL);
-            expType.setAddress(MemoryManager.get().allocNewTemp(SymbolType.LOGICAL));
 
             if (op == GREATER_THAN) {
 
